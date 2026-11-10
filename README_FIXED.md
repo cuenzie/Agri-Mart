@@ -11,7 +11,7 @@ Agri-Mart is a marketplace for agricultural tools, equipment, seeds, and other f
 - Updated successful-login redirection compatibility (`/dashboard`).
 
 ## Setup
-1. Install Node.js 24.12 or later (the Firebase version in this project requires it).
+1. Install Node.js 22.22.3 (the version used by the Netlify build configuration).
 2. Open this project folder in VS Code.
 3. Create `.env.local` in the project root using `.env.example` as the template.
 4. Fill in the Firebase Web App configuration values from Firebase Console > Project settings > Your apps.
@@ -37,7 +37,9 @@ npm run dev
    - `VITE_CLOUDINARY_UPLOAD_PRESET`
 4. Trigger a deploy. Vite embeds `VITE_*` variables during the build, so redeploy after changing them.
 5. Add the deployed Netlify domain to Firebase Authentication's **Authorized domains**. Configure any related provider redirect domains as required.
+6. If the deployed page reports `auth/invalid-api-key`, replace `VITE_FIREBASE_API_KEY` with the Web API key from Firebase Console > Project settings > Your apps, then trigger a new deploy.
+7. If sign-in reports `auth/auth-domain-config-required`, set `VITE_FIREBASE_AUTH_DOMAIN` to the `authDomain` value from that Firebase Web App configuration (usually `<project-id>.firebaseapp.com`), then trigger a new deploy. This is separate from adding the Netlify site domain to Firebase Authentication's Authorized domains.
 
 ## Important
-- `.env.local` was intentionally not included in this repaired ZIP to avoid sharing project configuration values. Keep your original local `.env.local` or recreate it from `.env.example`.
+- `.env.local` and other `.env.*` files are ignored by Git; `.env.example` contains placeholders only. Set real values in Netlify's environment variables and keep them out of source control.
 - This repair fixes the confirmed route mismatch. It does not change your Firebase project, database rules, or email-verification settings.

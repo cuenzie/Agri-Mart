@@ -101,6 +101,9 @@ const Login: React.FC = () => {
       case 'auth/api-key-not-valid':
         return 'The Firebase API key is invalid. Please check your Firebase configuration.';
 
+      case 'auth/auth-domain-config-required':
+        return 'Firebase Authentication is missing its auth domain. In Netlify, set VITE_FIREBASE_AUTH_DOMAIN to the authDomain value from Firebase Console > Project settings > Your apps, then redeploy.';
+
       case 'auth/unauthorized-continue-uri':
         return 'The app domain is not authorized. Check Authorized domains in Firebase.';
 

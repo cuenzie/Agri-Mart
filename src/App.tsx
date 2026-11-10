@@ -50,42 +50,56 @@ const AppRoutes: React.FC = () => {
   useEffect(() => {
     let active = true;
     let checkId = 0;
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      const currentCheck = ++checkId;
-      setUser(currentUser);
-      setUserRole(undefined);
-      setAuthProfileError('');
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (currentUser) => {
+        const currentCheck = ++checkId;
+        setUser(currentUser);
+        setUserRole(undefined);
+        setAuthProfileError('');
 
-      if (!currentUser || !currentUser.emailVerified) {
-        setCheckingAuth(false);
-        return;
-      }
-
-      setCheckingAuth(true);
-
-      try {
-        const profile = await getDoc(doc(db, 'users', currentUser.uid));
-        if (!active || currentCheck !== checkId) {
+        if (!currentUser || !currentUser.emailVerified) {
+          setCheckingAuth(false);
           return;
         }
-        if (profile.data()?.status === 'deactivated') {
-          await signOut(auth);
-          return;
+
+        setCheckingAuth(true);
+
+        try {
+          const profile = await getDoc(doc(db, 'users', currentUser.uid));
+          if (!active || currentCheck !== checkId) {
+            return;
+          }
+          if (profile.data()?.status === 'deactivated') {
+            await signOut(auth);
+            return;
+          }
+          setUserRole(profile.data()?.role);
+        } catch (error) {
+          console.error('Unable to load account role:', error);
+          if (active && currentCheck === checkId) {
+            setAuthProfileError(
+              'Could not verify your account status. Reload the page to try again.',
+            );
+          }
+        } finally {
+          if (active && currentCheck === checkId) {
+            setCheckingAuth(false);
+          }
         }
-        setUserRole(profile.data()?.role);
-      } catch (error) {
-        console.error('Unable to load account role:', error);
-        if (active && currentCheck === checkId) {
+      },
+      (error: Error) => {
+        console.error('Unable to initialize Firebase authentication:', error);
+        if (active) {
           setAuthProfileError(
-            'Could not verify your account status. Reload the page to try again.',
+            error.message.includes('auth/invalid-api-key')
+              ? 'Firebase rejected the API key. In Netlify, set VITE_FIREBASE_API_KEY to the Web API key from Firebase Console > Project settings > Your apps, then trigger a new deploy.'
+              : 'Unable to connect to Firebase authentication. Check the Netlify environment variables and deployment logs, then reload the page.',
           );
-        }
-      } finally {
-        if (active && currentCheck === checkId) {
           setCheckingAuth(false);
         }
-      }
-    });
+      },
+    );
 
     return () => {
       active = false;
