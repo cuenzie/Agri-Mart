@@ -1,0 +1,7 @@
+{
+  "name": "agri-mart",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}

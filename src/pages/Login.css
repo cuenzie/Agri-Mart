@@ -1,0 +1,343 @@
+
+.rh-login-content {
+  --background: var(--agri-white);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.rh-login-layout {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  min-height: 100%;
+  color: var(--agri-navy);
+}
+
+.rh-login-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 680px;
+  padding: 32px clamp(25px, 5vw, 75px);
+  overflow: hidden;
+  background:
+    linear-gradient(
+      150deg,
+      rgba(23, 43, 77, 0.88),
+      rgba(23, 43, 77, 0.77)
+    ),
+    url("https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=85")
+      center / cover;
+  color: var(--agri-white);
+}
+
+.rh-back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: var(--agri-white);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.rh-back-button ion-icon {
+  font-size: 19px;
+}
+
+.rh-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rh-login-logo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--agri-white);
+  color: var(--agri-orange);
+}
+
+.rh-login-logo ion-icon {
+  font-size: 33px;
+}
+
+.rh-login-brand strong {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.rh-login-brand small {
+  display: block;
+  max-width: 250px;
+  margin-top: 4px;
+  color: var(--agri-tint);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.rh-login-message {
+  max-width: 480px;
+  margin: 55px 0;
+}
+
+.rh-login-message > span,
+.rh-login-eyebrow {
+  color: var(--agri-orange);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.rh-login-message > span {
+  color: var(--agri-orange);
+}
+
+.rh-login-message h1 {
+  margin: 17px 0;
+  color: var(--agri-white);
+  font-size: clamp(35px, 4vw, 55px);
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.rh-login-message p {
+  max-width: 350px;
+  color: var(--agri-tint);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.rh-login-visual-footer {
+  color: var(--agri-tint);
+  font-size: 12px;
+}
+
+.rh-login-form-side {
+  display: grid;
+  place-items: center;
+  padding: 55px 30px;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(234, 240, 247, 0.48),
+      transparent 35%
+    ),
+    var(--agri-white);
+}
+
+.rh-login-form-wrap {
+  width: 100%;
+  max-width: 440px;
+}
+
+.rh-login-mobile-brand {
+  display: none;
+}
+
+.rh-login-form-wrap h2 {
+  margin: 13px 0 8px;
+  color: var(--agri-navy);
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.rh-login-description {
+  margin: 0 0 32px;
+  color: var(--agri-muted);
+  font-size: 14px;
+}
+
+.rh-login-label {
+  display: block;
+  margin: 20px 0 9px;
+  color: var(--agri-navy);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rh-login-input {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 51px;
+  padding: 0 14px;
+  border: 1px solid var(--agri-border);
+  border-radius: 10px;
+  background: var(--agri-white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.rh-login-input:focus-within {
+  border-color: var(--agri-orange);
+  box-shadow: 0 0 0 3px rgba(244, 123, 32, 0.09);
+}
+
+.rh-login-input > ion-icon {
+  flex-shrink: 0;
+  color: var(--agri-navy);
+  font-size: 19px;
+}
+
+.rh-login-input ion-input {
+  min-width: 0;
+  --color: var(--agri-navy);
+  --placeholder-color: var(--agri-muted);
+  --padding-top: 13px;
+  --padding-bottom: 13px;
+  font-size: 14px;
+}
+
+.rh-password-toggle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--agri-muted);
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.rh-login-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 16px 0 25px;
+  color: var(--agri-muted);
+  font-size: 11px;
+}
+
+.rh-login-options button {
+  border: 0;
+  background: transparent;
+  color: var(--agri-orange);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rh-login-submit {
+  margin-top: 6px;
+  height: 49px;
+  --background: var(--agri-orange);
+  --background-hover: var(--agri-orange);
+  --border-radius: 10px;
+  --color: var(--agri-white);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.rh-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 29px 0 18px;
+  color: var(--agri-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.rh-login-divider::before,
+.rh-login-divider::after {
+  flex: 1;
+  height: 1px;
+  background: var(--agri-border);
+  content: "";
+}
+
+.rh-register-button {
+  height: 47px;
+  --border-color: var(--agri-orange);
+  --border-radius: 10px;
+  --color: var(--agri-orange);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.rh-login-note {
+  margin-top: 25px;
+  color: var(--agri-muted);
+  font-size: 11px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+@media (max-width: 800px) {
+  .rh-login-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-login-visual {
+    min-height: 320px;
+    padding: 25px;
+  }
+
+  .rh-login-message {
+    margin: 40px 0 25px;
+  }
+
+  .rh-login-message h1 {
+    font-size: 36px;
+  }
+
+  .rh-login-visual-footer {
+    margin-bottom: 0;
+  }
+
+  .rh-login-form-side {
+    padding: 45px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rh-login-visual {
+    min-height: 285px;
+    padding: 20px;
+  }
+
+  .rh-login-message {
+    margin: 30px 0 20px;
+  }
+
+  .rh-login-message h1 {
+    font-size: 31px;
+  }
+
+  .rh-login-message p {
+    font-size: 13px;
+  }
+
+  .rh-login-form-side {
+    padding: 35px 20px;
+  }
+
+  .rh-login-form-wrap h2 {
+    font-size: 29px;
+  }
+
+  .rh-login-options {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}

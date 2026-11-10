@@ -1,0 +1,315 @@
+.dashboard-content {
+  --background:
+    radial-gradient(ellipse at 92% 0%, rgba(234, 240, 247, 0.48), transparent 34%),
+    var(--agri-background);
+}
+
+.dashboard-toolbar {
+  --background: var(--agri-navy);
+  --color: var(--agri-white);
+  --min-height: 72px;
+  box-shadow: 0 5px 20px rgba(23, 43, 77, 0.16);
+}
+
+.dashboard-toolbar ion-title {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.dashboard-toolbar-logout {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  margin: 0 8px 0 0;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --color: var(--agri-white);
+  --background: transparent;
+  --background-hover: rgba(255, 255, 255, 0.12);
+  --box-shadow: none;
+}
+
+.dashboard-brand-logo {
+  display: block;
+  width: auto;
+  height: 62px;
+  object-fit: contain;
+}
+
+.dashboard-loading {
+  display: grid;
+  min-height: 70vh;
+  place-items: center;
+}
+
+.dashboard-layout {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-bottom: 54px;
+}
+
+.dashboard-heading {
+  position: relative;
+  overflow: hidden;
+  margin: 25px 0 22px;
+  border: 1px solid var(--agri-border);
+  border-radius: 18px;
+  padding: 31px;
+  background:
+    radial-gradient(circle at 90% 15%, rgba(234, 240, 247, 0.82), transparent 25%),
+    linear-gradient(115deg, var(--agri-white) 0%, var(--agri-background) 68%, var(--agri-background) 100%);
+  box-shadow: 0 12px 30px rgba(23, 43, 77, 0.045);
+}
+
+.dashboard-eyebrow {
+  color: var(--agri-orange);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.dashboard-heading h1 {
+  margin: 10px 0 8px;
+  color: var(--agri-navy);
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 800;
+  letter-spacing: -1.1px;
+}
+
+.dashboard-heading p {
+  margin: 0;
+  color: var(--agri-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.dashboard-profile {
+  margin: 0;
+  border: 1px solid var(--agri-border);
+  border-radius: 17px;
+  background: var(--agri-white);
+  box-shadow: 0 10px 28px rgba(23, 43, 77, 0.055);
+}
+
+.dashboard-profile ion-card-content {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  padding: 26px;
+}
+
+.dashboard-profile-icon {
+  padding: 13px;
+  border-radius: 15px;
+  background: var(--agri-tint);
+  color: var(--agri-navy);
+  font-size: 32px;
+}
+
+.dashboard-profile-details h2 {
+  margin: 0 0 18px;
+  color: var(--agri-navy);
+  font-size: 20px;
+  letter-spacing: -0.35px;
+}
+
+.dashboard-profile-details p {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.25fr) 1fr;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--agri-border);
+  color: var(--agri-navy);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-profile-details p strong {
+  color: var(--agri-muted);
+  font-weight: 600;
+}
+
+.dashboard-services {
+  margin-top: 38px;
+}
+
+.dashboard-section-heading {
+  margin: 0 4px 15px;
+}
+
+.dashboard-section-heading h2 {
+  margin: 7px 0 0;
+  color: var(--agri-navy);
+  font-size: 25px;
+  letter-spacing: -0.55px;
+}
+
+.dashboard-service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+}
+
+.dashboard-service-card {
+  margin: 0;
+  border: 1px solid var(--agri-border);
+  border-radius: 16px;
+  background: var(--agri-white);
+  box-shadow: 0 8px 22px rgba(23, 43, 77, 0.05);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.dashboard-service-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--agri-border);
+  box-shadow: 0 16px 34px rgba(23, 43, 77, 0.1);
+}
+
+.dashboard-service-card ion-card-header {
+  padding: 23px 22px 11px;
+}
+
+.dashboard-service-card ion-card-header > ion-icon {
+  margin-bottom: 14px;
+  padding: 11px;
+  border-radius: 12px;
+  background: var(--agri-tint);
+  color: var(--agri-navy);
+  font-size: 25px;
+}
+
+.dashboard-service-card ion-card-title {
+  color: var(--agri-navy);
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.dashboard-service-card ion-card-content {
+  padding: 0 22px 23px;
+  color: var(--agri-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.dashboard-error {
+  margin: 22px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff0f0;
+  color: #b42318;
+}
+
+@media (max-width: 640px) {
+  .dashboard-heading {
+    margin-top: 16px;
+    padding: 23px 19px;
+  }
+
+  .dashboard-service-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 13px;
+  }
+
+  .dashboard-profile ion-card-content {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 20px;
+  }
+}
+
+.dashboard-content {
+  --background:
+    radial-gradient(circle at 100% 0, rgba(234, 240, 247, 0.75), transparent 30%),
+    var(--agri-background);
+}
+
+.dashboard-toolbar {
+  --background: var(--agri-navy);
+  box-shadow: 0 8px 24px rgba(23, 43, 77, 0.15);
+}
+
+.dashboard-toolbar-logout {
+  --border-radius: 10px;
+}
+
+.dashboard-layout {
+  max-width: 1240px;
+}
+
+.dashboard-heading {
+  margin-top: 30px;
+  border: 0;
+  border-radius: var(--agri-radius-lg);
+  padding: clamp(26px, 5vw, 48px);
+  background:
+    radial-gradient(circle at 88% 18%, rgba(244, 123, 32, 0.14), transparent 24%),
+    linear-gradient(120deg, var(--agri-navy), #243e67);
+  box-shadow: 0 18px 42px rgba(23, 43, 77, 0.18);
+}
+
+.dashboard-heading h1 {
+  color: var(--agri-white);
+}
+
+.dashboard-heading p {
+  max-width: 600px;
+  color: #d7e1ef;
+}
+
+.dashboard-heading .dashboard-eyebrow {
+  color: #ffb36e;
+}
+
+.dashboard-profile,
+.dashboard-service-card {
+  border-radius: var(--agri-radius-md);
+  box-shadow: var(--agri-shadow-sm);
+}
+
+.dashboard-profile ion-card-content {
+  padding: clamp(20px, 3vw, 30px);
+}
+
+.dashboard-profile-icon {
+  border-radius: 14px;
+  background: rgba(244, 123, 32, 0.11);
+  color: var(--agri-orange);
+}
+
+.dashboard-service-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.dashboard-service-card:hover {
+  border-color: rgba(244, 123, 32, 0.4);
+  box-shadow: var(--agri-shadow-md);
+}
+
+.dashboard-service-card ion-card-header > ion-icon {
+  border-radius: 14px;
+  background: var(--agri-tint);
+  color: var(--agri-orange);
+}
+
+.dashboard-service-card ion-card-title {
+  letter-spacing: -0.3px;
+}
+
+@media (max-width: 640px) {
+  .dashboard-heading {
+    margin-top: 16px;
+    border-radius: 18px;
+  }
+}
