@@ -24,6 +24,20 @@ npm install
 npm run dev
 ```
 
+## Deploy to Netlify
+1. Import the `cuenzie/Agri-Mart` GitHub repository into Netlify.
+2. Netlify reads `netlify.toml`, which configures `npm run build`, the `dist` publish directory, and SPA route fallback.
+3. In **Site configuration > Environment variables**, add the values from `.env.example`:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+   - `VITE_CLOUDINARY_CLOUD_NAME`
+   - `VITE_CLOUDINARY_UPLOAD_PRESET`
+4. Trigger a deploy. Vite embeds `VITE_*` variables during the build, so redeploy after changing them.
+5. Add the deployed Netlify domain to Firebase Authentication's **Authorized domains**. Configure any related provider redirect domains as required.
+
 ## Important
 - `.env.local` was intentionally not included in this repaired ZIP to avoid sharing project configuration values. Keep your original local `.env.local` or recreate it from `.env.example`.
 - This repair fixes the confirmed route mismatch. It does not change your Firebase project, database rules, or email-verification settings.
