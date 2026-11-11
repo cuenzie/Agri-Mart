@@ -1045,14 +1045,22 @@
 }
 
 .admin-form-card {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   padding: 24px;
+}
+
+.admin-form-card label {
+  min-width: 0;
 }
 
 .admin-form-card input,
 .admin-edit-modal input,
 .admin-edit-modal textarea,
 .admin-edit-modal select {
+  box-sizing: border-box;
+  max-width: 100%;
   min-height: 44px;
   border-color: var(--agri-border);
   border-radius: 10px;
