@@ -129,6 +129,11 @@
   padding: 32px 0 24px;
 }
 
+.admin-page-heading-overview {
+  justify-content: center;
+  text-align: center;
+}
+
 .admin-eyebrow {
   color: var(--agri-orange);
   font-size: 10px;
@@ -203,10 +208,9 @@
   font-size: 29px;
 }
 
-.admin-stat-hint {
-  margin-top: 4px;
-  color: var(--agri-muted);
-  font-size: 10px;
+.admin-overview-stats .admin-stat-card {
+  justify-items: center;
+  text-align: center;
 }
 
 .admin-table-card,

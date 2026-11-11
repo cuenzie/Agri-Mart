@@ -115,6 +115,25 @@ interface MarketplaceOrder {
   createdAt?: Timestamp;
 }
 
+interface MarketplaceReview {
+  id: string;
+  buyerId: string;
+  sellerId: string;
+  sellerRating: number;
+  sellerFeedback: string;
+  productId: string;
+  productRating: number;
+  productFeedback: string;
+  createdAt?: Timestamp;
+}
+
+interface ReviewDraft {
+  sellerRating: number;
+  sellerFeedback: string;
+  productRating: number;
+  productFeedback: string;
+}
+
 interface CheckoutDetails {
   contactNumber: string;
   buyerMeetupLocation: string;
@@ -441,6 +460,40 @@ const toOrder = (id: string, value: Record<string, unknown>): MarketplaceOrder =
   createdAt: value.createdAt instanceof Timestamp ? value.createdAt : undefined,
 });
 
+const toReview = (
+  id: string,
+  value: Record<string, unknown>,
+): MarketplaceReview => ({
+  id,
+  buyerId: typeof value.buyerId === 'string' ? value.buyerId : '',
+  sellerId: typeof value.sellerId === 'string' ? value.sellerId : '',
+  sellerRating: typeof value.sellerRating === 'number' ? value.sellerRating : 0,
+  sellerFeedback:
+    typeof value.sellerFeedback === 'string' ? value.sellerFeedback : '',
+  productId: typeof value.productId === 'string' ? value.productId : '',
+  productRating:
+    typeof value.productRating === 'number' ? value.productRating : 0,
+  productFeedback:
+    typeof value.productFeedback === 'string' ? value.productFeedback : '',
+  createdAt: value.createdAt instanceof Timestamp ? value.createdAt : undefined,
+});
+
+const emptyReviewDraft: ReviewDraft = {
+  sellerRating: 0,
+  sellerFeedback: '',
+  productRating: 0,
+  productFeedback: '',
+};
+
+const getAverageRating = (
+  reviews: MarketplaceReview[],
+  rating: 'sellerRating' | 'productRating',
+) =>
+  reviews.length
+    ? reviews.reduce((total, review) => total + review[rating], 0) /
+      reviews.length
+    : 0;
+
 const formatDate = (date?: Timestamp) =>
   date ? date.toDate().toLocaleString() : 'Just now';
 
@@ -542,6 +595,27 @@ const getOrderStatusLabel = (status: OrderStatus) => {
   }
 };
 
+const loadReviewsForSellers = async (sellerIds: string[]) => {
+  const uniqueSellerIds = [...new Set(sellerIds.filter(Boolean))];
+  const sellerIdGroups: string[][] = [];
+  for (let index = 0; index < uniqueSellerIds.length; index += 30) {
+    sellerIdGroups.push(uniqueSellerIds.slice(index, index + 30));
+  }
+  const snapshots = await Promise.all(
+    sellerIdGroups.map((sellerIdGroup) =>
+      getDocs(
+        query(
+          collection(db, 'reviews'),
+          where('sellerId', 'in', sellerIdGroup),
+        ),
+      ),
+    ),
+  );
+  return snapshots.flatMap((snapshot) =>
+    snapshot.docs.map((review) => toReview(review.id, review.data())),
+  );
+};
+
 const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -601,6 +675,11 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
   const [sellerAddressBarangayRetry, setSellerAddressBarangayRetry] =
     useState(0);
   const [orders, setOrders] = useState<MarketplaceOrder[]>([]);
+  const [reviews, setReviews] = useState<MarketplaceReview[]>([]);
+  const [reviewDrafts, setReviewDrafts] = useState<
+    Record<string, ReviewDraft>
+  >({});
+  const [submittingReviewFor, setSubmittingReviewFor] = useState('');
   const [resolvedOrderImages, setResolvedOrderImages] = useState<
     Record<string, string>
   >({});
@@ -1020,6 +1099,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
   useEffect(() => {
     let active = true;
     let unsubscribeOrderUpdates: (() => void) | undefined;
+    let unsubscribeReviewUpdates: (() => void) | undefined;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser || !currentUser.emailVerified) {
         navigate('/login', { replace: true });
@@ -1029,6 +1109,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
       setLoading(true);
       setError('');
       setUserId(currentUser.uid);
+      setReviews([]);
 
       try {
         const profileSnapshot = await getDoc(doc(db, 'users', currentUser.uid));
@@ -1083,19 +1164,28 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
           const productSnapshot = await getDocs(
             query(collection(db, 'products'), where('status', '==', 'active')),
           );
+          const nextProducts = productSnapshot.docs.map((product) =>
+            toProduct(product.id, product.data()),
+          );
+          const nextReviews = await loadReviewsForSellers(
+            nextProducts.map((product) => product.sellerId),
+          );
           if (active) {
-            setProducts(
-              productSnapshot.docs.map((product) =>
-                toProduct(product.id, product.data()),
-              ),
-            );
+            setProducts(nextProducts);
+            setReviews(nextReviews);
           }
         } else if (page === 'sell' || page === 'seller-dashboard') {
           if (hasSellerAccess(nextProfile)) {
             const productRequest = getDocs(
               query(collection(db, 'products'), where('sellerId', '==', currentUser.uid)),
             );
-            const [productSnapshot, categorySnapshot, orderSnapshot] =
+            const reviewRequest = getDocs(
+              query(
+                collection(db, 'reviews'),
+                where('sellerId', '==', currentUser.uid),
+              ),
+            );
+            const [productSnapshot, categorySnapshot, orderSnapshot, reviewSnapshot] =
               await Promise.all([
                 productRequest,
                 page === 'sell' || page === 'seller-dashboard'
@@ -1109,6 +1199,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                       ),
                     )
                   : Promise.resolve(null),
+                reviewRequest,
               ]);
             if (active) {
               setProducts(
@@ -1130,6 +1221,11 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                   ),
                 );
               }
+              setReviews(
+                reviewSnapshot.docs.map((review) =>
+                  toReview(review.id, review.data()),
+                ),
+              );
             }
           } else if (page === 'seller-dashboard') {
             navigate('/sell', { replace: true });
@@ -1251,12 +1347,48 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                 setLoading(false);
               },
             );
+            unsubscribeReviewUpdates = onSnapshot(
+              query(
+                collection(db, 'reviews'),
+                where('buyerId', '==', currentUser.uid),
+              ),
+              (reviewSnapshot) => {
+                if (!active) return;
+                setReviews(
+                  reviewSnapshot.docs.map((review) =>
+                    toReview(review.id, review.data()),
+                  ),
+                );
+              },
+              (reviewsError) => {
+                if (!active) return;
+                console.error('Unable to listen for buyer reviews:', reviewsError);
+                setError(
+                  getFirestoreErrorCode(reviewsError) === 'permission-denied'
+                    ? 'Firestore denied access to feedback. Publish the latest firestore.rules to enable reviews.'
+                    : 'Could not load your feedback. Check your connection and try again.',
+                );
+              },
+            );
           } else {
-            const orderSnapshot = await getDocs(orderQuery);
+            const [orderSnapshot, reviewSnapshot] = await Promise.all([
+              getDocs(orderQuery),
+              getDocs(
+                query(
+                  collection(db, 'reviews'),
+                  where('sellerId', '==', currentUser.uid),
+                ),
+              ),
+            ]);
             if (active) {
               setOrders(
                 orderSnapshot.docs.map((order) =>
                   toOrder(order.id, order.data()),
+                ),
+              );
+              setReviews(
+                reviewSnapshot.docs.map((review) =>
+                  toReview(review.id, review.data()),
                 ),
               );
             }
@@ -1279,6 +1411,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
       active = false;
       unsubscribe();
       unsubscribeOrderUpdates?.();
+      unsubscribeReviewUpdates?.();
     };
   }, [navigate, page]);
 
@@ -1891,6 +2024,66 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
     }
   };
 
+  const submitOrderReview = async (order: MarketplaceOrder) => {
+    const currentUser = auth.currentUser;
+    const draft = reviewDrafts[order.id] ?? emptyReviewDraft;
+    if (
+      !currentUser ||
+      currentUser.uid !== order.buyerId ||
+      !['picked_up', 'completed'].includes(order.status)
+    ) {
+      setError('Only the buyer can review a completed order.');
+      return;
+    }
+    if (reviews.some((review) => review.id === order.id)) {
+      setError('Feedback has already been submitted for this order.');
+      return;
+    }
+    if (
+      !Number.isInteger(draft.sellerRating) ||
+      draft.sellerRating < 1 ||
+      draft.sellerRating > 5 ||
+      !Number.isInteger(draft.productRating) ||
+      draft.productRating < 1 ||
+      draft.productRating > 5
+    ) {
+      setError('Choose a 1-to-5-star rating for both the seller and product.');
+      return;
+    }
+
+    setError('');
+    setNotice('');
+    setSubmittingReviewFor(order.id);
+    const reviewData = {
+      buyerId: currentUser.uid,
+      sellerId: order.sellerId,
+      sellerRating: draft.sellerRating,
+      sellerFeedback: draft.sellerFeedback.trim(),
+      productId: order.productId,
+      productRating: draft.productRating,
+      productFeedback: draft.productFeedback.trim(),
+      createdAt: serverTimestamp(),
+    };
+
+    try {
+      await setDoc(doc(db, 'reviews', order.id), reviewData);
+      setReviews((current) => [
+        ...current,
+        toReview(order.id, { ...reviewData, createdAt: Timestamp.now() }),
+      ]);
+      setNotice('Thank you! Your seller and product ratings were submitted.');
+    } catch (reviewError) {
+      console.error('Unable to submit order feedback:', reviewError);
+      setError(
+        getFirestoreErrorCode(reviewError) === 'permission-denied'
+          ? 'Firestore blocked this feedback. Publish the latest firestore.rules, then try again.'
+          : 'Could not submit feedback. Check your connection and try again.',
+      );
+    } finally {
+      setSubmittingReviewFor('');
+    }
+  };
+
   const findCheckoutMeetupLocation = async () => {
     const address = [
       checkoutDetails.meetupAddress,
@@ -2003,6 +2196,22 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
 
   const renderProductCard = (product: Product, allowPurchase: boolean) => {
     const ownProduct = product.sellerId === userId;
+    const productReviews = reviews.filter(
+      (review) => review.productId === product.id,
+    );
+    const sellerReviews = reviews.filter(
+      (review) => review.sellerId === product.sellerId,
+    );
+    const recentProductFeedback = productReviews
+      .filter((review) => review.productFeedback)
+      .sort(
+        (first, second) =>
+          (second.createdAt?.toMillis() ?? 0) -
+          (first.createdAt?.toMillis() ?? 0),
+      )
+      .slice(0, 2);
+    const productAverage = getAverageRating(productReviews, 'productRating');
+    const sellerAverage = getAverageRating(sellerReviews, 'sellerRating');
     const selectedQuantity = Number(quantities[product.id] ?? '1');
     const validQuantity =
       Number.isInteger(selectedQuantity) &&
@@ -2046,6 +2255,34 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
               )}
             </span>
           </div>
+          <div className="market-rating-summaries">
+            <span>
+              Product rating
+              <strong>
+                {productReviews.length
+                  ? `★ ${productAverage.toFixed(1)} (${productReviews.length})`
+                  : 'Not rated yet'}
+              </strong>
+            </span>
+            <span>
+              Seller rating
+              <strong>
+                {sellerReviews.length
+                  ? `★ ${sellerAverage.toFixed(1)} (${sellerReviews.length})`
+                  : 'Not rated yet'}
+              </strong>
+            </span>
+          </div>
+          {recentProductFeedback.length > 0 && (
+            <div className="market-product-feedback">
+              <strong>Recent product feedback</strong>
+              {recentProductFeedback.map((review) => (
+                <p key={review.id}>
+                  “{review.productFeedback}” <span>{review.productRating}/5</span>
+                </p>
+              ))}
+            </div>
+          )}
           <p className="market-seller-location">
             <strong>Pickup location</strong>
             {product.sellerMeetupLocation || 'Seller has not added an address yet'}
@@ -2495,6 +2732,20 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                     <div><small>Completed sales</small><strong>₱{completedSellerRevenue.toLocaleString()}</strong></div>
                     <span className="seller-dashboard-stat-note">from completed orders</span>
                   </article>
+                  <article>
+                    <span className="seller-dashboard-stat-icon gold">★</span>
+                    <div>
+                      <small>Seller rating</small>
+                      <strong>
+                        {reviews.length
+                          ? `${getAverageRating(reviews, 'sellerRating').toFixed(1)} / 5`
+                          : '—'}
+                      </strong>
+                    </div>
+                    <span className="seller-dashboard-stat-note">
+                      from {reviews.length} buyer {reviews.length === 1 ? 'review' : 'reviews'}
+                    </span>
+                  </article>
                 </div>
 
                 <div className="seller-dashboard-panels">
@@ -2561,6 +2812,30 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                                 </button>
                               )}
                             </div>
+                            {reviews
+                              .filter((review) => review.id === order.id)
+                              .map((review) => (
+                                <div
+                                  className="seller-dashboard-order-feedback"
+                                  key={review.id}
+                                >
+                                  <strong>Buyer feedback</strong>
+                                  <span>
+                                    Seller: {'★'.repeat(review.sellerRating)}{' '}
+                                    {review.sellerRating}/5
+                                    {review.sellerFeedback
+                                      ? ` — ${review.sellerFeedback}`
+                                      : ''}
+                                  </span>
+                                  <span>
+                                    Product: {'★'.repeat(review.productRating)}{' '}
+                                    {review.productRating}/5
+                                    {review.productFeedback
+                                      ? ` — ${review.productFeedback}`
+                                      : ''}
+                                  </span>
+                                </div>
+                              ))}
                             {order.deliveryMethod === 'meetup' &&
                               order.locationLatitude !== undefined &&
                               order.locationLongitude !== undefined && (
@@ -2881,6 +3156,19 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                                 <span><strong>{product.stock.toLocaleString()}</strong> in stock</span>
                                 <span>Listed {formatDate(product.createdAt)}</span>
                               </div>
+                              {(() => {
+                                const productReviews = reviews.filter(
+                                  (review) => review.productId === product.id,
+                                );
+                                return (
+                                  <p className="seller-listing-rating">
+                                    Product rating:{' '}
+                                    {productReviews.length
+                                      ? `★ ${getAverageRating(productReviews, 'productRating').toFixed(1)} (${productReviews.length})`
+                                      : 'No ratings yet'}
+                                  </p>
+                                );
+                              })()}
                               <div className="seller-listing-actions">
                                 <IonButton
                                   fill="outline"
@@ -3192,6 +3480,12 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                 {filteredOrders.length ? (
                   filteredOrders.map((order) => {
                     const received = page === 'received-orders';
+                    const orderReview = reviews.find(
+                      (review) => review.id === order.id,
+                    );
+                    const isCompletedOrder =
+                      order.status === 'picked_up' ||
+                      order.status === 'completed';
                     const orderLocationPosition =
                       order.locationLatitude !== undefined &&
                       order.locationLongitude !== undefined
@@ -3399,6 +3693,119 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                             </IonButton>
                           )}
                         </div>}
+                        {isCompletedOrder && !received && !orderReview && (
+                          <form
+                            className="market-review-form"
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              void submitOrderReview(order);
+                            }}
+                          >
+                            <div>
+                              <span className="market-eyebrow">ORDER COMPLETE</span>
+                              <h3>Rate your purchase</h3>
+                              <p>Share separate ratings for the seller and product.</p>
+                            </div>
+                            {(
+                              [
+                                ['sellerRating', 'sellerFeedback', 'Seller'],
+                                ['productRating', 'productFeedback', 'Product'],
+                              ] as const
+                            ).map(([ratingField, feedbackField, label]) => {
+                              const draft =
+                                reviewDrafts[order.id] ?? emptyReviewDraft;
+                              return (
+                                <fieldset
+                                  className="market-review-field"
+                                  key={ratingField}
+                                >
+                                  <legend>{label} rating</legend>
+                                  <div
+                                    className="market-review-stars"
+                                    role="group"
+                                    aria-label={`${label} rating`}
+                                  >
+                                    {[1, 2, 3, 4, 5].map((rating) => (
+                                      <button
+                                        type="button"
+                                        key={rating}
+                                        aria-label={`${rating} star${rating === 1 ? '' : 's'}`}
+                                        aria-pressed={draft[ratingField] === rating}
+                                        className={
+                                          draft[ratingField] >= rating
+                                            ? 'selected'
+                                            : ''
+                                        }
+                                        disabled={submittingReviewFor === order.id}
+                                        onClick={() =>
+                                          setReviewDrafts((current) => ({
+                                            ...current,
+                                            [order.id]: {
+                                              ...(current[order.id] ??
+                                                emptyReviewDraft),
+                                              [ratingField]: rating,
+                                            },
+                                          }))
+                                        }
+                                      >
+                                        ★
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <label>
+                                    Feedback (optional)
+                                    <textarea
+                                      maxLength={500}
+                                      rows={2}
+                                      value={draft[feedbackField]}
+                                      placeholder={`Share feedback about the ${label.toLowerCase()}...`}
+                                      disabled={submittingReviewFor === order.id}
+                                      onChange={(event) =>
+                                        setReviewDrafts((current) => ({
+                                          ...current,
+                                          [order.id]: {
+                                            ...(current[order.id] ??
+                                              emptyReviewDraft),
+                                            [feedbackField]: event.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                </fieldset>
+                              );
+                            })}
+                            <IonButton
+                              type="submit"
+                              disabled={submittingReviewFor === order.id}
+                            >
+                              {submittingReviewFor === order.id
+                                ? 'Submitting...'
+                                : 'Submit feedback'}
+                            </IonButton>
+                          </form>
+                        )}
+                        {isCompletedOrder && orderReview && (
+                          <section className="market-review-submitted">
+                            <strong>
+                              {received ? 'Buyer feedback' : 'Your feedback'}
+                            </strong>
+                            <p>
+                              Seller: {'★'.repeat(orderReview.sellerRating)}{' '}
+                              {orderReview.sellerRating}/5
+                              {orderReview.sellerFeedback
+                                ? ` — ${orderReview.sellerFeedback}`
+                                : ' — No written feedback.'}
+                            </p>
+                            <p>
+                              Product: {'★'.repeat(orderReview.productRating)}{' '}
+                              {orderReview.productRating}/5
+                              {orderReview.productFeedback
+                                ? ` — ${orderReview.productFeedback}`
+                                : ' — No written feedback.'}
+                            </p>
+                          </section>
+                        )}
                       </article>
                     );
                   })

@@ -369,6 +369,49 @@ service cloud.firestore {
         order.quantity > 0;
     }
 
+    function isValidReviewCreate(reviewId) {
+      let data = request.resource.data;
+      let orderPath = /databases/$(database)/documents/orders/$(reviewId);
+      let order = get(orderPath).data;
+      return exists(orderPath) &&
+        data.keys().hasAll([
+          'buyerId',
+          'sellerId',
+          'sellerRating',
+          'sellerFeedback',
+          'productId',
+          'productRating',
+          'productFeedback',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'buyerId',
+          'sellerId',
+          'sellerRating',
+          'sellerFeedback',
+          'productId',
+          'productRating',
+          'productFeedback',
+          'createdAt'
+        ]) &&
+        data.buyerId == request.auth.uid &&
+        data.buyerId == order.buyerId &&
+        data.sellerId == order.sellerId &&
+        data.productId == order.productId &&
+        order.status in ['picked_up', 'completed'] &&
+        data.sellerRating is int &&
+        data.sellerRating >= 1 &&
+        data.sellerRating <= 5 &&
+        data.sellerFeedback is string &&
+        data.sellerFeedback.size() <= 500 &&
+        data.productRating is int &&
+        data.productRating >= 1 &&
+        data.productRating <= 5 &&
+        data.productFeedback is string &&
+        data.productFeedback.size() <= 500 &&
+        data.createdAt == request.time;
+    }
+
     function isValidOrderCreate(orderId) {
       let data = request.resource.data;
       let productPath = /databases/$(database)/documents/products/$(data.productId);
@@ -610,6 +653,12 @@ service cloud.firestore {
       allow update: if isActiveUser() &&
         (isValidOrderStatusUpdate(orderId) || isValidBuyerOrderEdit(orderId));
       allow delete: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow get, list: if isActiveUser();
+      allow create: if isActiveUser() && isValidReviewCreate(reviewId);
+      allow update, delete: if false;
     }
 
     match /categories/{categoryId} {

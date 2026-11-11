@@ -788,7 +788,9 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
               <span className="admin-role-badge">Administrator</span>
             </header>
 
-            <section className="admin-page-heading">
+            <section
+              className={`admin-page-heading${page === 'overview' ? ' admin-page-heading-overview' : ''}`}
+            >
               <div>
                 <span className="admin-eyebrow">MARKETPLACE MANAGEMENT</span>
                 <h1>{pageInfo.title}</h1>
@@ -844,14 +846,16 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
             {notice && <p className="admin-notice" role="status">{notice}</p>}
 
             {page === 'overview' && (
-              <section className="admin-stat-grid" aria-label="System statistics">
+              <section
+                className="admin-stat-grid admin-overview-stats"
+                aria-label="System statistics"
+              >
                 <article className="admin-stat-card">
                   <span className="admin-stat-icon">
                     <IonIcon icon={peopleOutline} />
                   </span>
                   <span className="admin-stat-label">Registered users</span>
                   <strong>{loading ? '—' : userCount}</strong>
-                  <span className="admin-stat-hint">Accounts in Firestore</span>
                 </article>
                 <article className="admin-stat-card pending">
                   <span className="admin-stat-icon">
@@ -859,7 +863,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                   </span>
                   <span className="admin-stat-label">Products</span>
                   <strong>{loading ? '—' : productCount}</strong>
-                  <span className="admin-stat-hint">Listings in Firestore</span>
                 </article>
                 <article className="admin-stat-card pending">
                   <span className="admin-stat-icon">
@@ -867,7 +870,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                   </span>
                   <span className="admin-stat-label">Orders</span>
                   <strong>{loading ? '—' : orderCount}</strong>
-                  <span className="admin-stat-hint">Orders in Firestore</span>
                 </article>
               </section>
             )}
