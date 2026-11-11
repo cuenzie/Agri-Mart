@@ -930,8 +930,16 @@
 }
 
 .market-order-actions .market-cancel-order {
-  --color: var(--ion-color-danger, #eb445a);
-  --border-color: var(--ion-color-danger, #eb445a);
+  --background: var(--ion-color-danger, #eb445a);
+  --background-hover: #c93449;
+}
+
+.market-order-cancel-note {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--agri-muted);
+  font-size: 11px;
+  text-align: right;
 }
 
 .market-about-card {

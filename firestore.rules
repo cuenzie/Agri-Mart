@@ -392,6 +392,7 @@ service cloud.firestore {
           'quantity',
           'unitPrice',
           'total',
+          'scheduledAt',
           'status',
           'createdAt'
         ]) &&
@@ -415,6 +416,7 @@ service cloud.firestore {
           'quantity',
           'unitPrice',
           'total',
+          'scheduledAt',
           'status',
           'createdAt'
         ]) &&
@@ -458,6 +460,7 @@ service cloud.firestore {
           : true) &&
         data.orderNotes is string &&
         data.orderNotes.size() <= 500 &&
+        data.scheduledAt is timestamp &&
         data.sellerId == product.sellerId &&
         data.sellerId != request.auth.uid &&
         data.sellerName == product.sellerName &&

@@ -110,6 +110,7 @@ interface MarketplaceOrder {
   quantity: number;
   unitPrice: number;
   total: number;
+  scheduledAt?: Timestamp;
   status: OrderStatus;
   createdAt?: Timestamp;
 }
@@ -122,6 +123,7 @@ interface CheckoutDetails {
   meetupAddress: string;
   meetupPosition: [number, number] | null;
   deliveryMethod: 'pickup' | 'meetup';
+  scheduledAt: string;
   orderNotes: string;
 }
 
@@ -425,6 +427,8 @@ const toOrder = (id: string, value: Record<string, unknown>): MarketplaceOrder =
   quantity: typeof value.quantity === 'number' ? value.quantity : 0,
   unitPrice: typeof value.unitPrice === 'number' ? value.unitPrice : 0,
   total: typeof value.total === 'number' ? value.total : 0,
+  scheduledAt:
+    value.scheduledAt instanceof Timestamp ? value.scheduledAt : undefined,
   status:
     value.status === 'ready_for_pickup' ||
     value.status === 'picked_up' ||
@@ -438,6 +442,11 @@ const toOrder = (id: string, value: Record<string, unknown>): MarketplaceOrder =
 
 const formatDate = (date?: Timestamp) =>
   date ? date.toDate().toLocaleString() : 'Just now';
+
+const toLocalDateTimeInputValue = (date: Date) =>
+  new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
 
 const isPsgcMunicipality = (value: unknown): value is PsgcMunicipality =>
   typeof value === 'object' &&
@@ -616,6 +625,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
     meetupAddress: '',
     meetupPosition: null,
     deliveryMethod: 'pickup',
+    scheduledAt: '',
     orderNotes: '',
   });
   const [meetupLookupLoading, setMeetupLookupLoading] = useState(false);
@@ -643,6 +653,9 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
       (municipality) =>
         municipality.name === checkoutDetails.meetupMunicipality,
     )?.code ?? '';
+  const minScheduledAt = toLocalDateTimeInputValue(
+    new Date(Date.now() + 5 * 60_000),
+  );
   const sellerAddressLocation = checkoutProduct
     ? parseOrientalMindoroLocation(
         checkoutProduct.sellerMeetupLocation,
@@ -1650,6 +1663,15 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
       setError('Enter a contact number the seller can call.');
       return;
     }
+    const scheduledAt = new Date(checkoutDetails.scheduledAt);
+    if (
+      !checkoutDetails.scheduledAt ||
+      Number.isNaN(scheduledAt.getTime()) ||
+      scheduledAt.getTime() <= Date.now()
+    ) {
+      setError('Choose a future date and time for pickup or meet-up.');
+      return;
+    }
     if (
       checkoutDetails.deliveryMethod === 'meetup' &&
       (municipalitiesLoading ||
@@ -1742,6 +1764,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
           quantity,
           unitPrice: currentProduct.price,
           total: currentProduct.price * quantity,
+          scheduledAt: Timestamp.fromDate(scheduledAt),
           status: 'pending',
           createdAt: serverTimestamp(),
         });
@@ -1765,6 +1788,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
         meetupAddress: '',
         meetupPosition: null,
         deliveryMethod: 'pickup',
+        scheduledAt: '',
         orderNotes: '',
       });
     } catch (orderError) {
@@ -2064,6 +2088,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                         meetupAddress: '',
                         meetupPosition: null,
                         deliveryMethod: 'pickup',
+                        scheduledAt: '',
                         orderNotes: '',
                       });
                       setCheckoutProduct(product);
@@ -3265,6 +3290,16 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                           <p><strong>Quantity</strong><span>{order.quantity}</span></p>
                           <p><strong>Unit price</strong><span>₱{order.unitPrice.toLocaleString()}</span></p>
                           <p><strong>Total</strong><span>₱{order.total.toLocaleString()}</span></p>
+                          <p className="market-order-wide">
+                            <strong>
+                              Preferred {order.deliveryMethod === 'meetup' ? 'meet-up' : 'pickup'} date &amp; time
+                            </strong>
+                            <span>
+                              {order.scheduledAt
+                                ? formatDate(order.scheduledAt)
+                                : 'Not specified'}
+                            </span>
+                          </p>
                           <p><strong>Placed</strong><span>{formatDate(order.createdAt)}</span></p>
                         </div>
                         {order.deliveryMethod === 'meetup' &&
@@ -3347,9 +3382,12 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                             order.status === 'confirmed' ||
                             order.status === 'ready_for_pickup') && (
                             <div className="market-order-actions">
+                              <p className="market-order-cancel-note">
+                                You can cancel this order before it is picked up.
+                              </p>
                               <IonButton
                                 className="market-cancel-order"
-                                fill="outline"
+                                fill="solid"
                                 color="danger"
                                 disabled={saving}
                                 onClick={() =>
@@ -3628,6 +3666,24 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                   }
                   placeholder="Mobile number the seller can call"
                 />
+              </label>
+              <label>
+                Preferred pickup / meet-up date and time
+                <input
+                  type="datetime-local"
+                  required
+                  min={minScheduledAt}
+                  value={checkoutDetails.scheduledAt}
+                  onChange={(event) =>
+                    setCheckoutDetails((current) => ({
+                      ...current,
+                      scheduledAt: event.target.value,
+                    }))
+                  }
+                />
+                <span className="market-checkout-optional">
+                  This is your requested schedule. The seller can confirm it with you.
+                </span>
               </label>
               <fieldset className="market-fulfillment-options">
                 <legend>Choose how you’ll receive your order</legend>
