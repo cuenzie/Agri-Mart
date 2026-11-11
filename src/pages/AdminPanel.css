@@ -362,7 +362,8 @@
 }
 
 .admin-orders-toolbar .admin-search {
-  flex: 1 1 320px;
+  width: min(100%, 280px);
+  flex: 0 1 280px;
 }
 
 .admin-order-filter {
@@ -841,6 +842,12 @@
 
   .admin-orders-toolbar {
     align-items: stretch;
+  }
+
+  .admin-orders-toolbar .admin-search {
+    width: 100%;
+    max-width: none;
+    flex-basis: auto;
   }
 
   .admin-order-filter {

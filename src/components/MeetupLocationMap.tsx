@@ -114,7 +114,8 @@ const MeetupLocationMap: FC<MeetupLocationMapProps> = ({
       <div ref={mapElementRef} className="meetup-location-map-canvas" />
       {interactive && (
         <p className="meetup-location-map-hint">
-          Tap the map to pin your meeting point. Map tiles by OpenStreetMap.
+          Search the address above or tap the map to pin your meeting point.
+          Map tiles by OpenStreetMap.
         </p>
       )}
     </div>

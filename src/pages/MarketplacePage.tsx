@@ -51,6 +51,7 @@ import {
 } from 'firebase/firestore';
 import MeetupLocationMap from '../components/MeetupLocationMap';
 import OrderAddressMap from '../components/OrderAddressMap';
+import { geocodeOrientalMindoroAddress } from '../utils/geocodeOrientalMindoroAddress';
 import { auth, db } from '../firebase';
 import './MarketplacePage.css';
 
@@ -617,6 +618,8 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
     deliveryMethod: 'pickup',
     orderNotes: '',
   });
+  const [meetupLookupLoading, setMeetupLookupLoading] = useState(false);
+  const [meetupLookupError, setMeetupLookupError] = useState('');
   const [editingProductId, setEditingProductId] = useState('');
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm);
   const [productImage, setProductImage] = useState<File | null>(null);
@@ -1783,6 +1786,17 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
     order: MarketplaceOrder,
     status: OrderStatus,
   ) => {
+    if (
+      status === 'cancelled' &&
+      !window.confirm(
+        page === 'my-orders'
+          ? `Cancel your order for "${order.productName}"? The reserved stock will be returned to the seller.`
+          : `Decline the order for "${order.productName}"? The reserved stock will be returned.`,
+      )
+    ) {
+      return;
+    }
+
     setError('');
     setNotice('');
     setSaving(true);
@@ -1802,11 +1816,27 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
             throw new Error('The product listing could not be found.');
           }
           const currentOrder = orderSnapshot.data();
+          const ownerField = page === 'my-orders' ? 'buyerId' : 'sellerId';
+          if (currentOrder[ownerField] !== userId) {
+            throw new Error('You are not allowed to cancel this order.');
+          }
           if (!['pending', 'confirmed', 'ready_for_pickup'].includes(currentOrder.status)) {
             throw new Error('Only orders not yet picked up can be cancelled.');
           }
+          const quantity = currentOrder.quantity;
+          const stock = productSnapshot.data().stock;
+          if (
+            typeof quantity !== 'number' ||
+            !Number.isInteger(quantity) ||
+            quantity <= 0 ||
+            typeof stock !== 'number' ||
+            !Number.isInteger(stock) ||
+            stock < 0
+          ) {
+            throw new Error('The order quantity or product stock is invalid.');
+          }
           transaction.update(productRef, {
-            stock: productSnapshot.data().stock + currentOrder.quantity,
+            stock: stock + quantity,
             updatedAt: serverTimestamp(),
             lastRefundOrderId: order.id,
           });
@@ -1830,6 +1860,40 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const findCheckoutMeetupLocation = async () => {
+    const address = [
+      checkoutDetails.meetupAddress,
+      checkoutDetails.meetupBarangay,
+      checkoutDetails.meetupMunicipality,
+    ]
+      .filter(Boolean)
+      .join(', ');
+    if (!checkoutDetails.meetupMunicipality || !checkoutDetails.meetupBarangay) {
+      setMeetupLookupError('Select a municipality and barangay before finding the map pin.');
+      return;
+    }
+
+    setMeetupLookupLoading(true);
+    setMeetupLookupError('');
+    try {
+      const position = await geocodeOrientalMindoroAddress(address);
+      if (!position) {
+        setMeetupLookupError(
+          'No matching map location was found. Try adding a nearby landmark, or tap the map to place the pin manually.',
+        );
+        return;
+      }
+      setCheckoutDetails((current) => ({ ...current, meetupPosition: position }));
+    } catch (lookupError) {
+      console.error('Unable to find checkout meet-up location:', lookupError);
+      setMeetupLookupError(
+        'Could not search the map. Check your connection or tap the map to place the pin manually.',
+      );
+    } finally {
+      setMeetupLookupLoading(false);
     }
   };
 
@@ -3278,6 +3342,24 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                             </IonButton>
                           )}
                         </div>}
+                        {!received &&
+                          (order.status === 'pending' ||
+                            order.status === 'confirmed' ||
+                            order.status === 'ready_for_pickup') && (
+                            <div className="market-order-actions">
+                              <IonButton
+                                className="market-cancel-order"
+                                fill="outline"
+                                color="danger"
+                                disabled={saving}
+                                onClick={() =>
+                                  void updateOrderStatus(order, 'cancelled')
+                                }
+                              >
+                                Cancel order
+                              </IonButton>
+                            </div>
+                          )}
                       </article>
                     );
                   })
@@ -3749,25 +3831,46 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                     <textarea
                       maxLength={500}
                       value={checkoutDetails.meetupAddress}
-                      onChange={(event) =>
-                        setCheckoutDetails({
-                          ...checkoutDetails,
+                      onChange={(event) => {
+                        setMeetupLookupError('');
+                        setCheckoutDetails((current) => ({
+                          ...current,
                           meetupAddress: event.target.value,
-                        })
-                      }
+                          meetupPosition: null,
+                        }));
+                      }}
                       placeholder="Add a public landmark or meeting point"
                     />
                   </label>
+                  <IonButton
+                    className="market-meetup-map-search"
+                    type="button"
+                    fill="outline"
+                    disabled={
+                      meetupLookupLoading ||
+                      !checkoutDetails.meetupMunicipality ||
+                      !checkoutDetails.meetupBarangay
+                    }
+                    onClick={() => void findCheckoutMeetupLocation()}
+                  >
+                    {meetupLookupLoading ? 'Searching map...' : 'Find address on map'}
+                  </IonButton>
+                  {meetupLookupError && (
+                    <span className="market-location-error" role="alert">
+                      {meetupLookupError}
+                    </span>
+                  )}
                   <MeetupLocationMap
                     interactive
                     label="Choose the meet-up point on the map"
                     position={checkoutDetails.meetupPosition}
-                    onPositionChange={(meetupPosition) =>
-                      setCheckoutDetails({
-                        ...checkoutDetails,
+                    onPositionChange={(meetupPosition) => {
+                      setMeetupLookupError('');
+                      setCheckoutDetails((current) => ({
+                        ...current,
                         meetupPosition,
-                      })
-                    }
+                      }));
+                    }}
                   />
                 </>
               )}
