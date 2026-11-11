@@ -8,20 +8,16 @@ import {
   IonSpinner,
 } from '@ionic/react';
 import {
-  addOutline,
   cubeOutline,
-  createOutline,
   gridOutline,
   logOutOutline,
   menuOutline,
   peopleOutline,
   personAddOutline,
   personCircleOutline,
-  pricetagOutline,
   receiptOutline,
   searchOutline,
   settingsOutline,
-  trashOutline,
 } from 'ionicons/icons';
 import {
   onAuthStateChanged,
@@ -30,18 +26,15 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
-  query,
   runTransaction,
   serverTimestamp,
   Timestamp,
   updateDoc,
-  where,
   writeBatch,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -53,7 +46,6 @@ type AdminPage =
   | 'seller-applications'
   | 'products'
   | 'orders'
-  | 'categories'
   | 'settings';
 type UserStatus = 'active' | 'deactivated';
 
@@ -105,12 +97,6 @@ interface ManagedOrder {
   total: number;
   status: OrderStatus;
   createdAt?: Timestamp;
-}
-
-interface ManagedCategory {
-  id: string;
-  name: string;
-  productCount: number;
 }
 
 interface AdminProfile {
@@ -180,10 +166,6 @@ const pageDetails: Record<AdminPage, { title: string; description: string }> = {
     title: 'Order Management',
     description: 'Review buyer orders and order details.',
   },
-  categories: {
-    title: 'Category Management',
-    description: 'Manage the categories used to organize products.',
-  },
   settings: {
     title: 'Admin Profile / Settings',
     description: 'Update your admin profile and password.',
@@ -200,7 +182,6 @@ const navigation: {
   { page: 'seller-applications', label: 'Seller Requests', icon: personAddOutline },
   { page: 'products', label: 'Product Management', icon: cubeOutline },
   { page: 'orders', label: 'Order Management', icon: receiptOutline },
-  { page: 'categories', label: 'Category Management', icon: pricetagOutline },
   { page: 'settings', label: 'Admin Profile / Settings', icon: settingsOutline },
 ];
 
@@ -215,17 +196,13 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
   const [reviewingSellerApplicationId, setReviewingSellerApplicationId] = useState('');
   const [products, setProducts] = useState<ManagedProduct[]>([]);
   const [orders, setOrders] = useState<ManagedOrder[]>([]);
-  const [categories, setCategories] = useState<ManagedCategory[]>([]);
   const [userCount, setUserCount] = useState(0);
   const [productCount, setProductCount] = useState(0);
   const [orderCount, setOrderCount] = useState(0);
   const [search, setSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [orderStatusDrafts, setOrderStatusDrafts] = useState<Record<string, OrderStatus | ''>>({});
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [editingCategory, setEditingCategory] = useState<ManagedCategory | null>(null);
   const [savingOrderId, setSavingOrderId] = useState('');
-  const [savingCategory, setSavingCategory] = useState(false);
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const [editingProduct, setEditingProduct] = useState<ManagedProduct | null>(null);
   const [profile, setProfile] = useState<AdminProfile>({
@@ -410,44 +387,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
     }
   }, []);
 
-  const loadCategories = useCallback(async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const [categorySnapshot, productSnapshot] = await Promise.all([
-        getDocs(collection(db, 'categories')),
-        getDocs(collection(db, 'products')),
-      ]);
-      const productCounts = new Map<string, number>();
-      productSnapshot.docs.forEach((productDoc) => {
-        const categoryName = productDoc.data().category;
-        if (typeof categoryName === 'string') {
-          productCounts.set(categoryName, (productCounts.get(categoryName) ?? 0) + 1);
-        }
-      });
-      setCategories(
-        categorySnapshot.docs
-          .map((categoryDoc) => {
-            const name = categoryDoc.data().name;
-            if (typeof name !== 'string' || !name.trim()) return null;
-            return {
-              id: categoryDoc.id,
-              name: name.trim(),
-              productCount: productCounts.get(name.trim()) ?? 0,
-            };
-          })
-          .filter((category): category is ManagedCategory => category !== null)
-          .sort((a, b) => a.name.localeCompare(b.name)),
-      );
-    } catch (loadError) {
-      console.error('Unable to load product categories:', loadError);
-      setError('Could not load categories. Confirm the admin category read rule is published, then refresh.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   const loadProfile = useCallback(async (uid: string) => {
     const snapshot = await getDoc(doc(db, 'users', uid));
     const data = snapshot.data();
@@ -493,8 +432,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
           await loadProducts();
         } else if (page === 'orders') {
           await loadOrders();
-        } else if (page === 'categories') {
-          await loadCategories();
         } else if (page === 'overview') {
           setLoading(true);
           try {
@@ -537,7 +474,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
       unsubscribe();
     };
   }, [
-    loadCategories,
     loadOrders,
     loadProducts,
     loadProfile,
@@ -654,138 +590,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
       return matchesStatus && matchesSearch;
     });
   }, [orderStatusFilter, orders, search]);
-
-  const saveCategory = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const categoryName = (editingCategory?.name ?? newCategoryName).trim();
-    if (!categoryName) {
-      setError('Enter a category name.');
-      return;
-    }
-    if (
-      categories.some(
-        (category) =>
-          category.id !== editingCategory?.id &&
-          category.name.toLowerCase() === categoryName.toLowerCase(),
-      )
-    ) {
-      setError('A category with this name already exists.');
-      return;
-    }
-
-    setError('');
-    setNotice('');
-    setSavingCategory(true);
-    try {
-      if (editingCategory) {
-        const previousName = editingCategory.name;
-        if (previousName !== categoryName) {
-          const matchingProducts = await getDocs(
-            query(
-              collection(db, 'products'),
-              where('category', '==', previousName),
-            ),
-          );
-          for (let start = 0; start < matchingProducts.docs.length; start += 450) {
-            const batch = writeBatch(db);
-            matchingProducts.docs
-              .slice(start, start + 450)
-              .forEach((productDoc) => {
-                batch.update(productDoc.ref, {
-                  category: categoryName,
-                  updatedAt: serverTimestamp(),
-                });
-              });
-            await batch.commit();
-          }
-        }
-        await updateDoc(doc(db, 'categories', editingCategory.id), {
-          name: categoryName,
-          updatedAt: serverTimestamp(),
-        });
-        setCategories((current) =>
-          current
-            .map((category) =>
-              category.id === editingCategory.id
-                ? { ...category, name: categoryName }
-                : category,
-            )
-            .sort((a, b) => a.name.localeCompare(b.name)),
-        );
-        setEditingCategory(null);
-        setNotice(
-          previousName === categoryName
-            ? 'Category saved.'
-            : `Category renamed. Products in "${previousName}" were updated.`,
-        );
-      } else {
-        const categoryRef = await addDoc(collection(db, 'categories'), {
-          name: categoryName,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-        setCategories((current) =>
-          [...current, { id: categoryRef.id, name: categoryName, productCount: 0 }]
-            .sort((a, b) => a.name.localeCompare(b.name)),
-        );
-        setNewCategoryName('');
-        setNotice('Category created.');
-      }
-    } catch (saveError) {
-      console.error('Unable to save product category:', saveError);
-      setError(
-        'Could not save this category. Confirm the admin category write rule is published, then refresh to check product updates.',
-      );
-    } finally {
-      setSavingCategory(false);
-    }
-  };
-
-  const deleteCategory = async (category: ManagedCategory) => {
-    if (category.productCount > 0) {
-      setError(
-        `Cannot delete "${category.name}" while ${category.productCount} product(s) use it. Rename it instead or update those products first.`,
-      );
-      return;
-    }
-    try {
-      const currentProducts = await getDocs(
-        query(collection(db, 'products'), where('category', '==', category.name)),
-      );
-      if (!currentProducts.empty) {
-        setCategories((current) =>
-          current.map((entry) =>
-            entry.id === category.id
-              ? { ...entry, productCount: currentProducts.size }
-              : entry,
-          ),
-        );
-        setError(
-          `Cannot delete "${category.name}" while ${currentProducts.size} product(s) use it. Rename it instead or update those products first.`,
-        );
-        return;
-      }
-    } catch (checkError) {
-      console.error('Unable to verify category usage before deletion:', checkError);
-      setError('Could not verify whether this category is in use. Refresh and try again.');
-      return;
-    }
-    if (!window.confirm(`Delete the "${category.name}" category? This cannot be undone.`)) {
-      return;
-    }
-    setError('');
-    setNotice('');
-    try {
-      await deleteDoc(doc(db, 'categories', category.id));
-      setCategories((current) =>
-        current.filter((entry) => entry.id !== category.id),
-      );
-      setNotice('Category deleted.');
-    } catch (deleteError) {
-      console.error('Unable to delete product category:', deleteError);
-      setError('Could not delete this category. Check the Firestore rules and try again.');
-    }
-  };
 
   const updateManagedOrderStatus = async (
     order: ManagedOrder,
@@ -1231,16 +1035,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                   disabled={loading}
                 >
                   Refresh orders
-                </IonButton>
-              )}
-              {page === 'categories' && (
-                <IonButton
-                  fill="outline"
-                  className="admin-refresh"
-                  onClick={loadCategories}
-                  disabled={loading || savingCategory}
-                >
-                  Refresh categories
                 </IonButton>
               )}
             </section>
@@ -1701,121 +1495,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                     </table>
                   </div>
                 )}
-              </section>
-            )}
-
-            {page === 'categories' && (
-              <section className="admin-categories-layout">
-                <form className="admin-form-card admin-category-form" onSubmit={(event) => void saveCategory(event)}>
-                  <div className="admin-form-heading">
-                    <IonIcon icon={editingCategory ? createOutline : addOutline} />
-                    <div>
-                      <h2>{editingCategory ? 'Rename category' : 'Add a category'}</h2>
-                      <p>
-                        {editingCategory
-                          ? 'Product listings using this category will be updated too.'
-                          : 'New categories will be available when sellers list products.'}
-                      </p>
-                    </div>
-                  </div>
-                  <label>
-                    Category name
-                    <input
-                      required
-                      minLength={2}
-                      maxLength={60}
-                      value={editingCategory?.name ?? newCategoryName}
-                      onChange={(event) =>
-                        editingCategory
-                          ? setEditingCategory({ ...editingCategory, name: event.target.value })
-                          : setNewCategoryName(event.target.value)
-                      }
-                      placeholder="e.g. Seeds & seedlings"
-                    />
-                  </label>
-                  <div className="admin-category-form-actions">
-                    <IonButton type="submit" disabled={savingCategory || loading}>
-                      {savingCategory
-                        ? 'Saving…'
-                        : editingCategory
-                          ? 'Save category'
-                          : 'Add category'}
-                    </IonButton>
-                    {editingCategory && (
-                      <IonButton
-                        type="button"
-                        fill="outline"
-                        disabled={savingCategory}
-                        onClick={() => setEditingCategory(null)}
-                      >
-                        Cancel
-                      </IonButton>
-                    )}
-                  </div>
-                </form>
-
-                <section className="admin-table-card admin-category-list">
-                  <div className="admin-table-toolbar">
-                    <strong>{categories.length} category(ies)</strong>
-                  </div>
-                  {loading ? (
-                    <div className="admin-table-loading">
-                      <IonSpinner name="crescent" color="success" />
-                      <span>Loading product categories...</span>
-                    </div>
-                  ) : categories.length === 0 ? (
-                    <div className="admin-empty">
-                      <IonIcon icon={pricetagOutline} />
-                      <h2>No categories yet</h2>
-                      <p>Add a category to make it available in product listings.</p>
-                    </div>
-                  ) : (
-                    <div className="admin-table-scroll">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Category</th>
-                            <th>Products</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {categories.map((category) => (
-                            <tr key={category.id}>
-                              <td>{category.name}</td>
-                              <td>{category.productCount}</td>
-                              <td className="admin-actions">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setError('');
-                                    setEditingCategory({ ...category });
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  className="danger"
-                                  disabled={category.productCount > 0}
-                                  title={
-                                    category.productCount > 0
-                                      ? 'Rename or update products before deleting this category.'
-                                      : 'Delete category'
-                                  }
-                                  onClick={() => void deleteCategory(category)}
-                                >
-                                  <IonIcon icon={trashOutline} />
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </section>
               </section>
             )}
 

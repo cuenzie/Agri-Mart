@@ -404,45 +404,6 @@
   white-space: nowrap;
 }
 
-.admin-categories-layout {
-  display: grid;
-  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
-  align-items: start;
-  gap: 16px;
-}
-
-.admin-category-form {
-  min-width: 0;
-}
-
-.admin-category-form-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.admin-category-form-actions ion-button {
-  margin: 0;
-}
-
-.admin-category-form-actions ion-button[fill='outline'] {
-  --background: transparent;
-  --color: var(--agri-navy);
-  --border-color: var(--agri-border);
-}
-
-.admin-category-list {
-  min-width: 0;
-}
-
-.admin-category-list .admin-table-toolbar {
-  justify-content: flex-start;
-}
-
-.admin-category-list .admin-actions {
-  min-width: 130px;
-}
-
 .admin-user-role {
   display: inline-block;
   border-radius: 999px;
@@ -876,9 +837,6 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-categories-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 680px) {

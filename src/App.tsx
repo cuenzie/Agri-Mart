@@ -226,13 +226,7 @@ const AppRoutes: React.FC = () => {
       />
       <Route
         path="/admin/categories"
-        element={
-          user && user.emailVerified ? (
-            <AdminPanel page="categories" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
+        element={<Navigate to="/admin" replace />}
       />
       <Route
         path="/admin/settings"
