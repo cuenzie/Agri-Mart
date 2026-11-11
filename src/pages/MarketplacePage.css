@@ -4420,3 +4420,30 @@
     height: 210px;
   }
 }
+
+@media (max-width: 640px) {
+  .market-nav button,
+  .seller-dashboard-sidebar button {
+    min-height: 44px;
+  }
+
+  .market-filters input,
+  .market-filters select,
+  .market-form-card input,
+  .market-form-card textarea,
+  .market-checkout-modal input,
+  .market-checkout-modal textarea,
+  .market-checkout-modal select {
+    font-size: 16px;
+  }
+
+  .market-buy-controls ion-button {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 380px) {
+  .market-product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

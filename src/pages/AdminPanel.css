@@ -1042,3 +1042,29 @@
     font-size: 27px;
   }
 }
+
+@media (max-width: 680px) {
+  .admin-topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-block: 10px;
+  }
+
+  .admin-nav button,
+  .admin-logout {
+    min-height: 44px;
+  }
+
+  .admin-search input,
+  .admin-form-card input,
+  .admin-edit-modal input,
+  .admin-edit-modal textarea,
+  .admin-edit-modal select {
+    font-size: 16px;
+  }
+
+  .admin-table-scroll {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+}

@@ -744,3 +744,17 @@
     border-radius: 18px;
   }
 }
+
+@media (max-width: 640px) {
+  .auth-field > ion-input,
+  .auth-role-select,
+  .auth-native-password,
+  .auth-login-card input {
+    font-size: 16px;
+  }
+
+  .auth-primary-button,
+  .auth-google-button {
+    min-height: 44px;
+  }
+}
