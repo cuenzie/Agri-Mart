@@ -191,7 +191,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
   const [orderCount, setOrderCount] = useState(0);
   const [search, setSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
-  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const [profile, setProfile] = useState<AdminProfile>({
     fullName: '',
     phone: '',
@@ -588,30 +587,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
     }
   };
 
-  const saveUser = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editingUser) return;
-    setError('');
-    setNotice('');
-
-    try {
-      await updateDoc(doc(db, 'users', editingUser.uid), {
-        fullName: editingUser.fullName.trim(),
-        phone: editingUser.phone.trim(),
-      });
-      setUsers((currentUsers) =>
-        currentUsers.map((user) =>
-          user.uid === editingUser.uid ? editingUser : user,
-        ),
-      );
-      setEditingUser(null);
-      setNotice('User profile updated.');
-    } catch (saveError) {
-      console.error('Unable to update user profile:', saveError);
-      setError('Could not update this user. Check the Firestore rules.');
-    }
-  };
-
   const toggleUserStatus = async (user: ManagedUser) => {
     if (user.uid === auth.currentUser?.uid) {
       setError('You cannot deactivate the admin account currently in use.');
@@ -937,7 +912,7 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                           <th>Role</th>
                           <th>Status</th>
                           <th>Phone</th>
-                          <th>Actions</th>
+                          <th>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -953,12 +928,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                             </td>
                             <td>{user.phone || '—'}</td>
                             <td className="admin-actions">
-                              <button
-                                type="button"
-                                onClick={() => setEditingUser({ ...user })}
-                              >
-                                Edit
-                              </button>
                               <button
                                 type="button"
                                 className={user.status === 'active' ? 'danger' : 'restore'}
@@ -1334,55 +1303,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
           </main>
         </div>
 
-        {editingUser && (
-          <div className="admin-modal-backdrop" role="presentation">
-            <form
-              className="admin-edit-modal"
-              onSubmit={(event) => void saveUser(event)}
-              aria-labelledby="edit-user-title"
-            >
-              <h2 id="edit-user-title">Edit user profile</h2>
-              <p className="admin-edit-email">{editingUser.email}</p>
-              <label>
-                Full name
-                <input
-                  required
-                  maxLength={100}
-                  value={editingUser.fullName}
-                  onChange={(event) =>
-                    setEditingUser({
-                      ...editingUser,
-                      fullName: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Phone
-                <input
-                  maxLength={30}
-                  value={editingUser.phone}
-                  onChange={(event) =>
-                    setEditingUser({
-                      ...editingUser,
-                      phone: event.target.value,
-                    })
-                  }
-                />
-              </label>
-              <div className="admin-modal-actions">
-                <IonButton
-                  type="button"
-                  fill="outline"
-                  onClick={() => setEditingUser(null)}
-                >
-                  Cancel
-                </IonButton>
-                <IonButton type="submit">Save changes</IonButton>
-              </div>
-            </form>
-          </div>
-        )}
       </IonContent>
     </IonPage>
   );
