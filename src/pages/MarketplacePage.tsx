@@ -1503,7 +1503,9 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
           : '';
       if (errorMessage === 'cloudinary-config-missing') {
         setError(
-          'Cloudinary is not configured. Add VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET to .env.local, then restart the app.',
+          import.meta.env.PROD
+            ? 'Product image uploads are not configured for this deployed app. In Netlify, add VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET under Site configuration > Environment variables, then trigger a new deploy.'
+            : 'Cloudinary is not configured. Add VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET to .env.local, then restart the app.',
         );
       } else if (errorMessage === 'cloudinary-upload-timeout') {
         setError(

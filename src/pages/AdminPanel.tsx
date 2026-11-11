@@ -31,7 +31,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  runTransaction,
   serverTimestamp,
   Timestamp,
   updateDoc,
@@ -136,15 +135,6 @@ const orderStatusLabels: Record<OrderStatus, string> = {
   cancelled: 'Cancelled',
 };
 
-const orderStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
-  pending: ['confirmed', 'ready_for_pickup', 'cancelled'],
-  confirmed: ['ready_for_pickup', 'completed', 'cancelled'],
-  ready_for_pickup: ['picked_up', 'cancelled'],
-  picked_up: ['completed'],
-  completed: [],
-  cancelled: [],
-};
-
 const pageDetails: Record<AdminPage, { title: string; description: string }> = {
   overview: {
     title: 'Dashboard',
@@ -164,7 +154,7 @@ const pageDetails: Record<AdminPage, { title: string; description: string }> = {
   },
   orders: {
     title: 'Order Management',
-    description: 'Review buyer orders and order details.',
+    description: 'View buyer orders and their seller-managed status.',
   },
   settings: {
     title: 'Admin Profile / Settings',
@@ -201,8 +191,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
   const [orderCount, setOrderCount] = useState(0);
   const [search, setSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
-  const [orderStatusDrafts, setOrderStatusDrafts] = useState<Record<string, OrderStatus | ''>>({});
-  const [savingOrderId, setSavingOrderId] = useState('');
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const [profile, setProfile] = useState<AdminProfile>({
     fullName: '',
@@ -589,89 +577,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
       return matchesStatus && matchesSearch;
     });
   }, [orderStatusFilter, orders, search]);
-
-  const updateManagedOrderStatus = async (
-    order: ManagedOrder,
-    nextStatus: OrderStatus,
-  ) => {
-    if (!orderStatusTransitions[order.status].includes(nextStatus)) return;
-    if (
-      nextStatus === 'cancelled' &&
-      !window.confirm(
-        `Cancel order ${order.id.slice(0, 8)} and return ${order.quantity} item(s) to product stock?`,
-      )
-    ) {
-      return;
-    }
-    setError('');
-    setNotice('');
-    setSavingOrderId(order.id);
-    try {
-      await runTransaction(db, async (transaction) => {
-        const orderRef = doc(db, 'orders', order.id);
-        const orderSnapshot = await transaction.get(orderRef);
-        if (!orderSnapshot.exists()) {
-          throw new Error('This order could not be found.');
-        }
-        const currentOrder = orderSnapshot.data();
-        if (currentOrder.status !== order.status) {
-          throw new Error('This order changed. Refresh the list and try again.');
-        }
-        if (!orderStatusTransitions[order.status].includes(nextStatus)) {
-          throw new Error('This status change is no longer available.');
-        }
-
-        if (nextStatus === 'cancelled') {
-          const productId = currentOrder.productId;
-          const quantity = currentOrder.quantity;
-          if (
-            typeof productId !== 'string' ||
-            !productId ||
-            typeof quantity !== 'number' ||
-            quantity <= 0
-          ) {
-            throw new Error('This order is missing product or quantity details.');
-          }
-          const productRef = doc(db, 'products', productId);
-          const productSnapshot = await transaction.get(productRef);
-          if (!productSnapshot.exists()) {
-            throw new Error('The product listing could not be found, so this order cannot be cancelled.');
-          }
-          const stock = productSnapshot.data().stock;
-          if (typeof stock !== 'number') {
-            throw new Error('The product stock is invalid, so this order cannot be cancelled.');
-          }
-          transaction.update(productRef, {
-            stock: stock + quantity,
-            updatedAt: serverTimestamp(),
-            lastRefundOrderId: order.id,
-          });
-        }
-        transaction.update(orderRef, { status: nextStatus });
-      });
-
-      setOrders((current) =>
-        current.map((entry) =>
-          entry.id === order.id ? { ...entry, status: nextStatus } : entry,
-        ),
-      );
-      setOrderStatusDrafts((current) => ({ ...current, [order.id]: '' }));
-      setNotice(
-        nextStatus === 'cancelled'
-          ? 'Order cancelled and product stock restored.'
-          : `Order marked ${orderStatusLabels[nextStatus].toLowerCase()}.`,
-      );
-    } catch (statusError) {
-      console.error('Unable to update marketplace order:', statusError);
-      setError(
-        statusError instanceof Error
-          ? statusError.message
-          : 'Could not update this order. Check the Firestore rules.',
-      );
-    } finally {
-      setSavingOrderId('');
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -1304,92 +1209,53 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                           <th>Total</th>
                           <th>Fulfillment</th>
                           <th>Placed</th>
-                          <th>Status / Action</th>
+                          <th>Status</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredOrders.map((order) => {
-                          const availableTransitions = orderStatusTransitions[order.status];
-                          const selectedStatus = orderStatusDrafts[order.id] ?? '';
-                          return (
-                            <tr key={order.id}>
-                              <td title={order.id}>{order.id.slice(0, 8)}</td>
-                              <td>
-                                <strong>{order.productName}</strong>
-                                {order.orderNotes && (
-                                  <small className="admin-order-subtext" title={order.orderNotes}>
-                                    Note: {order.orderNotes}
-                                  </small>
-                                )}
-                              </td>
-                              <td>
-                                <span>{order.buyerName}</span>
-                                <small className="admin-order-subtext">
-                                  {order.buyerEmail || order.contactNumber || '—'}
+                        {filteredOrders.map((order) => (
+                          <tr key={order.id}>
+                            <td title={order.id}>{order.id.slice(0, 8)}</td>
+                            <td>
+                              <strong>{order.productName}</strong>
+                              {order.orderNotes && (
+                                <small className="admin-order-subtext" title={order.orderNotes}>
+                                  Note: {order.orderNotes}
                                 </small>
-                              </td>
-                              <td title={order.sellerId}>{order.sellerName}</td>
-                              <td>{order.quantity}</td>
-                              <td>₱{order.total.toLocaleString()}</td>
-                              <td>
-                                {order.deliveryMethod === 'meetup' ||
-                                order.deliveryMethod === 'meetup_pickup'
-                                  ? 'Meet-up'
-                                  : 'Pickup'}
-                                {order.buyerMeetupLocation && (
-                                  <small className="admin-order-subtext" title={order.buyerMeetupLocation}>
-                                    {order.buyerMeetupLocation}
-                                  </small>
-                                )}
-                              </td>
-                              <td>
-                                {order.createdAt
-                                  ? order.createdAt.toDate().toLocaleDateString()
-                                  : '—'}
-                              </td>
-                              <td>
-                                <div className="admin-order-actions">
-                                  <span className={`admin-status ${order.status}`}>
-                                    {orderStatusLabels[order.status]}
-                                  </span>
-                                  {availableTransitions.length > 0 && (
-                                    <div className="admin-order-status-update">
-                                      <select
-                                        aria-label={`Update status for order ${order.id.slice(0, 8)}`}
-                                        value={selectedStatus}
-                                        disabled={savingOrderId === order.id}
-                                        onChange={(event) =>
-                                          setOrderStatusDrafts((current) => ({
-                                            ...current,
-                                            [order.id]: event.target.value as OrderStatus | '',
-                                          }))
-                                        }
-                                      >
-                                        <option value="">Update status</option>
-                                        {availableTransitions.map((status) => (
-                                          <option value={status} key={status}>
-                                            {orderStatusLabels[status]}
-                                          </option>
-                                        ))}
-                                      </select>
-                                      {selectedStatus && (
-                                        <button
-                                          type="button"
-                                          disabled={savingOrderId === order.id}
-                                          onClick={() =>
-                                            void updateManagedOrderStatus(order, selectedStatus)
-                                          }
-                                        >
-                                          {savingOrderId === order.id ? 'Saving…' : 'Save'}
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                              )}
+                            </td>
+                            <td>
+                              <span>{order.buyerName}</span>
+                              <small className="admin-order-subtext">
+                                {order.buyerEmail || order.contactNumber || '—'}
+                              </small>
+                            </td>
+                            <td title={order.sellerId}>{order.sellerName}</td>
+                            <td>{order.quantity}</td>
+                            <td>₱{order.total.toLocaleString()}</td>
+                            <td>
+                              {order.deliveryMethod === 'meetup' ||
+                              order.deliveryMethod === 'meetup_pickup'
+                                ? 'Meet-up'
+                                : 'Pickup'}
+                              {order.buyerMeetupLocation && (
+                                <small className="admin-order-subtext" title={order.buyerMeetupLocation}>
+                                  {order.buyerMeetupLocation}
+                                </small>
+                              )}
+                            </td>
+                            <td>
+                              {order.createdAt
+                                ? order.createdAt.toDate().toLocaleDateString()
+                                : '—'}
+                            </td>
+                            <td>
+                              <span className={`admin-status ${order.status}`}>
+                                {orderStatusLabels[order.status]}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
