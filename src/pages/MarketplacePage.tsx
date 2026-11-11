@@ -21,6 +21,7 @@ import {
   leafOutline,
   lockClosedOutline,
   logOutOutline,
+  menuOutline,
   personCircleOutline,
   personOutline,
   receiptOutline,
@@ -533,6 +534,7 @@ const getOrderStatusLabel = (status: OrderStatus) => {
 const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [sellerView, setSellerView] = useState<
     'dashboard' | 'listings' | 'details'
   >(() => {
@@ -2096,6 +2098,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
             slot="end"
             fill="clear"
             className="market-logout"
+            aria-label="Log out"
             onClick={() => void handleLogout()}
           >
             <IonIcon icon={logOutOutline} slot="start" />
@@ -2120,55 +2123,104 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
         >
           {page === 'seller-dashboard' ||
           (page === 'received-orders' && hasSellerAccess(profile)) ? (
-            <nav className="seller-dashboard-sidebar" aria-label="Seller dashboard">
-              <span className="seller-dashboard-sidebar-label">SELLER WORKSPACE</span>
+            <div className="market-mobile-navigation">
               <button
                 type="button"
-                className={page === 'seller-dashboard' && sellerView === 'dashboard' ? 'active' : ''}
-                onClick={() => navigate('/seller-dashboard')}
+                className="market-mobile-menu-toggle"
+                aria-expanded={mobileNavigationOpen}
+                aria-controls="seller-dashboard-navigation"
+                aria-label="Toggle seller navigation"
+                onClick={() => setMobileNavigationOpen((open) => !open)}
               >
-                <IonIcon icon={storefrontOutline} />
-                Overview
+                <IonIcon icon={menuOutline} />
+                Seller menu
               </button>
-              <button
-                type="button"
-                className={page === 'received-orders' ? 'active' : ''}
-                onClick={() => navigate('/order-management')}
+              <nav
+                id="seller-dashboard-navigation"
+                className={`seller-dashboard-sidebar${mobileNavigationOpen ? ' mobile-navigation-open' : ''}`}
+                aria-label="Seller dashboard"
               >
-                <IonIcon icon={receiptOutline} />
-                Order management
-              </button>
-              <button
-                type="button"
-                className={page === 'seller-dashboard' && sellerView === 'listings' ? 'active' : ''}
-                onClick={() => navigate('/seller-dashboard?view=listings')}
-              >
-                <IonIcon icon={cubeOutline} />
-                Manage listings
-              </button>
-              <button
-                type="button"
-                className={page === 'seller-dashboard' && sellerView === 'details' ? 'active' : ''}
-                onClick={() => navigate('/seller-dashboard?view=details')}
-              >
-                <IonIcon icon={addOutline} />
-                Add product
-              </button>
-            </nav>
+                <span className="seller-dashboard-sidebar-label">SELLER WORKSPACE</span>
+                <button
+                  type="button"
+                  className={page === 'seller-dashboard' && sellerView === 'dashboard' ? 'active' : ''}
+                  onClick={() => {
+                    setMobileNavigationOpen(false);
+                    navigate('/seller-dashboard');
+                  }}
+                >
+                  <IonIcon icon={storefrontOutline} />
+                  Overview
+                </button>
+                <button
+                  type="button"
+                  className={page === 'received-orders' ? 'active' : ''}
+                  onClick={() => {
+                    setMobileNavigationOpen(false);
+                    navigate('/order-management');
+                  }}
+                >
+                  <IonIcon icon={receiptOutline} />
+                  Order management
+                </button>
+                <button
+                  type="button"
+                  className={page === 'seller-dashboard' && sellerView === 'listings' ? 'active' : ''}
+                  onClick={() => {
+                    setMobileNavigationOpen(false);
+                    navigate('/seller-dashboard?view=listings');
+                  }}
+                >
+                  <IonIcon icon={cubeOutline} />
+                  Manage listings
+                </button>
+                <button
+                  type="button"
+                  className={page === 'seller-dashboard' && sellerView === 'details' ? 'active' : ''}
+                  onClick={() => {
+                    setMobileNavigationOpen(false);
+                    navigate('/seller-dashboard?view=details');
+                  }}
+                >
+                  <IonIcon icon={addOutline} />
+                  Add product
+                </button>
+              </nav>
+            </div>
           ) : page !== 'sell' ? (
-            <nav className="market-nav" aria-label="Marketplace pages">
-              {navigation.map((item) => (
+            <div className="market-mobile-navigation">
+              <button
+                type="button"
+                className="market-mobile-menu-toggle"
+                aria-expanded={mobileNavigationOpen}
+                aria-controls="marketplace-navigation"
+                aria-label="Toggle marketplace navigation"
+                onClick={() => setMobileNavigationOpen((open) => !open)}
+              >
+                <IonIcon icon={menuOutline} />
+                Marketplace menu
+              </button>
+              <nav
+                id="marketplace-navigation"
+                className={`market-nav${mobileNavigationOpen ? ' mobile-navigation-open' : ''}`}
+                aria-label="Marketplace pages"
+              >
+                {navigation.map((item) => (
                 <button
                   type="button"
                   key={item.path}
                   className={page === item.page ? 'active' : ''}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => {
+                    setMobileNavigationOpen(false);
+                    navigate(item.path);
+                  }}
                 >
                   <IonIcon icon={item.icon} />
                   {item.label}
                 </button>
               ))}
-            </nav>
+              </nav>
+            </div>
           ) : null}
 
           <main className="market-main">

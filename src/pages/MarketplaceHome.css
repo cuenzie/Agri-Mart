@@ -390,6 +390,8 @@
 
   .rh-menu-toggle {
     display: block;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .rh-nav {
@@ -413,6 +415,7 @@
   }
 
   .rh-nav button {
+    min-height: 44px;
     padding: 12px 0;
     text-align: left;
   }

@@ -11,6 +11,7 @@ import {
   cubeOutline,
   gridOutline,
   logOutOutline,
+  menuOutline,
   peopleOutline,
   personAddOutline,
   personCircleOutline,
@@ -148,6 +149,7 @@ const navigation: {
 
 const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
   const navigate = useNavigate();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -724,21 +726,36 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
               <div>
                 <span>ADMIN PANEL</span>
               </div>
+              <button
+                type="button"
+                className="admin-menu-toggle"
+                aria-expanded={mobileNavigationOpen}
+                aria-controls="admin-navigation"
+                onClick={() => setMobileNavigationOpen((open) => !open)}
+              >
+                <IonIcon icon={menuOutline} />
+                Menu
+              </button>
             </div>
 
-            <nav className="admin-nav" aria-label="Admin navigation">
+            <nav
+              id="admin-navigation"
+              className={`admin-nav${mobileNavigationOpen ? ' mobile-navigation-open' : ''}`}
+              aria-label="Admin navigation"
+            >
               {navigation.map((item) => (
                 <button
                   type="button"
                   key={item.page}
                   className={page === item.page ? 'active' : ''}
-                  onClick={() =>
+                  onClick={() => {
+                    setMobileNavigationOpen(false);
                     navigate(
                       item.page === 'overview'
                         ? '/admin'
                         : `/admin/${item.page}`,
-                    )
-                  }
+                    );
+                  }}
                 >
                   <IonIcon icon={item.icon} />
                   {item.label}

@@ -42,6 +42,16 @@
   --ion-color-success-tint: #22c55e;
 }
 
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
 body {
   margin: 0;
   background: var(--rh-background);
@@ -53,9 +63,30 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+html,
+body,
+#root,
+ion-app,
+ion-page {
+  width: 100%;
+  min-width: 0;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
 ion-app {
   color: var(--agri-text);
   font-family: inherit;
+}
+
+ion-content,
+ion-page,
+ion-router-outlet {
+  min-width: 0;
 }
 
 ion-content {
@@ -202,5 +233,13 @@ ion-button:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }

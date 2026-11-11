@@ -49,12 +49,15 @@ const Home: React.FC = () => {
                 type="button"
                 className="rh-menu-toggle"
                 aria-label="Toggle navigation menu"
-                onClick={() => setMenuOpen(!menuOpen)}
+                aria-expanded={menuOpen}
+                aria-controls="home-navigation"
+                onClick={() => setMenuOpen((open) => !open)}
               >
                 <IonIcon icon={menuOutline} />
               </button>
 
               <nav
+                id="home-navigation"
                 className={`rh-nav ${menuOpen ? 'rh-nav-open' : ''}`}
                 aria-label="Main navigation"
               >

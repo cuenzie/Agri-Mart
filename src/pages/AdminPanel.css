@@ -53,6 +53,10 @@
   margin-top: 21px;
 }
 
+.admin-menu-toggle {
+  display: none;
+}
+
 .admin-nav button,
 .admin-logout {
   display: flex;
@@ -756,33 +760,6 @@
     padding: 0 6px 11px;
   }
 
-  .admin-nav {
-    display: flex;
-    overflow-x: auto;
-    gap: 5px;
-    margin-top: 10px;
-  }
-
-  .admin-nav button {
-    min-height: 38px;
-    flex: 0 0 auto;
-    padding: 0 9px;
-    font-size: 10px;
-  }
-
-  .admin-logout {
-    position: absolute;
-    top: 12px;
-    right: 8px;
-    min-height: 36px;
-    padding: 0 8px;
-    font-size: 0;
-  }
-
-  .admin-logout ion-icon {
-    font-size: 19px;
-  }
-
   .admin-main {
     padding: 0 15px 24px;
   }
@@ -1011,6 +988,69 @@
 }
 
 @media (max-width: 680px) {
+  .admin-brand {
+    min-width: 0;
+    align-items: center;
+    padding: 0 6px 10px;
+  }
+
+  .admin-brand > img {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+  }
+
+  .admin-menu-toggle {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-left: auto;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 9px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--agri-white);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .admin-menu-toggle ion-icon {
+    font-size: 19px;
+  }
+
+  .admin-nav {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .admin-nav.mobile-navigation-open {
+    display: grid;
+  }
+
+  .admin-nav button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 9px;
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-logout {
+    position: static;
+    align-self: flex-end;
+    min-height: 44px;
+    margin: 7px 0 0;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
   .admin-sidebar {
     position: sticky;
     top: 0;
@@ -1041,6 +1081,10 @@
   .admin-page-heading h1 {
     font-size: 27px;
   }
+
+  .admin-nav {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 680px) {
@@ -1066,5 +1110,32 @@
   .admin-table-scroll {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
+  }
+
+  .admin-modal-backdrop {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+
+  .admin-edit-modal {
+    width: min(100%, 430px);
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .admin-modal-actions ion-button {
+    min-height: 44px;
+    margin: 0;
   }
 }
