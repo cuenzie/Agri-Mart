@@ -2187,7 +2187,7 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                 </button>
               </nav>
             </div>
-          ) : page !== 'sell' ? (
+          ) : (
             <div className="market-mobile-navigation">
               <button
                 type="button"
@@ -2206,22 +2206,22 @@ const MarketplacePage: React.FC<{ page: MarketplacePageName }> = ({ page }) => {
                 aria-label="Marketplace pages"
               >
                 {navigation.map((item) => (
-                <button
-                  type="button"
-                  key={item.path}
-                  className={page === item.page ? 'active' : ''}
-                  onClick={() => {
-                    setMobileNavigationOpen(false);
-                    navigate(item.path);
-                  }}
-                >
-                  <IonIcon icon={item.icon} />
-                  {item.label}
-                </button>
-              ))}
+                  <button
+                    type="button"
+                    key={item.path}
+                    className={page === item.page ? 'active' : ''}
+                    onClick={() => {
+                      setMobileNavigationOpen(false);
+                      navigate(item.path);
+                    }}
+                  >
+                    <IonIcon icon={item.icon} />
+                    {item.label}
+                  </button>
+                ))}
               </nav>
             </div>
-          ) : null}
+          )}
 
           <main className="market-main">
             {page !== 'home' && (

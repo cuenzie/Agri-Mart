@@ -340,6 +340,109 @@
   margin-top: 4px;
 }
 
+.admin-order-subtext {
+  display: block;
+  max-width: 210px;
+  overflow: hidden;
+  margin-top: 4px;
+  color: var(--agri-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.admin-order-actions {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.admin-order-status-update {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-order-status-update select,
+.admin-order-filter select {
+  min-height: 36px;
+  border: 1px solid var(--agri-border);
+  border-radius: 8px;
+  padding: 0 9px;
+  background: var(--agri-white);
+  color: var(--agri-navy);
+  font: inherit;
+  font-size: 11px;
+}
+
+.admin-order-status-update button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 11px;
+  background: var(--agri-orange);
+  color: var(--agri-white);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-order-status-update button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.admin-orders-toolbar .admin-search {
+  flex: 1 1 320px;
+}
+
+.admin-order-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--agri-muted);
+  white-space: nowrap;
+}
+
+.admin-categories-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.admin-category-form {
+  min-width: 0;
+}
+
+.admin-category-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-category-form-actions ion-button {
+  margin: 0;
+}
+
+.admin-category-form-actions ion-button[fill='outline'] {
+  --background: transparent;
+  --color: var(--agri-navy);
+  --border-color: var(--agri-border);
+}
+
+.admin-category-list {
+  min-width: 0;
+}
+
+.admin-category-list .admin-table-toolbar {
+  justify-content: flex-start;
+}
+
+.admin-category-list .admin-actions {
+  min-width: 130px;
+}
+
 .admin-user-role {
   display: inline-block;
   border-radius: 999px;
@@ -364,6 +467,30 @@
 }
 
 .admin-status.deactivated {
+  background: #fff0ed;
+  color: #b54735;
+}
+
+.admin-status.pending {
+  background: rgba(244, 123, 32, 0.12);
+  color: #a64b08;
+}
+
+.admin-status.confirmed,
+.admin-status.ready_for_pickup {
+  background: #eaf0f7;
+  color: var(--agri-navy);
+}
+
+.admin-status.picked_up,
+.admin-status.completed,
+.admin-status.active {
+  background: var(--agri-success-light);
+  color: var(--agri-success);
+}
+
+.admin-status.cancelled,
+.admin-status.removed {
   background: #fff0ed;
   color: #b54735;
 }
@@ -396,6 +523,11 @@
 .admin-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.admin-actions button ion-icon {
+  vertical-align: middle;
+  margin-right: 3px;
 }
 
 .admin-table-loading,
@@ -743,6 +875,10 @@
   .admin-product-edit-row {
     grid-template-columns: 1fr;
   }
+
+  .admin-categories-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 680px) {
@@ -790,6 +926,18 @@
 
   .admin-search {
     width: 100%;
+  }
+
+  .admin-orders-toolbar {
+    align-items: stretch;
+  }
+
+  .admin-order-filter {
+    justify-content: space-between;
+  }
+
+  .admin-order-filter select {
+    flex: 1;
   }
 }
 
