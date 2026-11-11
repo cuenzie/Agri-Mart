@@ -204,7 +204,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
   const [orderStatusDrafts, setOrderStatusDrafts] = useState<Record<string, OrderStatus | ''>>({});
   const [savingOrderId, setSavingOrderId] = useState('');
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
-  const [editingProduct, setEditingProduct] = useState<ManagedProduct | null>(null);
   const [profile, setProfile] = useState<AdminProfile>({
     fullName: '',
     phone: '',
@@ -757,88 +756,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
     }
   };
 
-  const saveManagedProduct = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editingProduct) return;
-
-    setError('');
-    setNotice('');
-    const updatedProduct = {
-      name: editingProduct.name.trim(),
-      description: editingProduct.description.trim(),
-      category: editingProduct.category.trim(),
-      price: Number(editingProduct.price),
-      stock: Number(editingProduct.stock),
-      status: editingProduct.status,
-    };
-    if (
-      !updatedProduct.name ||
-      !updatedProduct.category ||
-      !Number.isFinite(updatedProduct.price) ||
-      updatedProduct.price <= 0 ||
-      !Number.isInteger(updatedProduct.stock) ||
-      updatedProduct.stock < 0 ||
-      !['active', 'removed'].includes(updatedProduct.status)
-    ) {
-      setError('Enter valid product details before saving.');
-      return;
-    }
-
-    try {
-      await updateDoc(doc(db, 'products', editingProduct.id), {
-        ...updatedProduct,
-        updatedAt: serverTimestamp(),
-      });
-      setProducts((current) =>
-        current.map((product) =>
-          product.id === editingProduct.id
-            ? { ...product, ...updatedProduct }
-            : product,
-        ),
-      );
-      setEditingProduct(null);
-      setNotice('Product listing updated.');
-    } catch (saveError) {
-      console.error('Unable to update marketplace product:', saveError);
-      setError(
-        'Could not update this product. Confirm the admin product update rule is published.',
-      );
-    }
-  };
-
-  const setManagedProductStatus = async (
-    product: ManagedProduct,
-    status: 'active' | 'removed',
-  ) => {
-    const action = status === 'removed' ? 'remove' : 'restore';
-    if (!window.confirm(`${action === 'remove' ? 'Remove' : 'Restore'} "${product.name}" ${action === 'remove' ? 'from' : 'to'} the marketplace?`)) {
-      return;
-    }
-    setError('');
-    setNotice('');
-    try {
-      await updateDoc(doc(db, 'products', product.id), {
-        status,
-        updatedAt: serverTimestamp(),
-      });
-      setProducts((current) =>
-        current.map((entry) =>
-          entry.id === product.id ? { ...entry, status } : entry,
-        ),
-      );
-      setNotice(
-        status === 'removed'
-          ? 'Listing removed from the marketplace. It remains visible here for moderation.'
-          : 'Listing restored to the marketplace.',
-      );
-    } catch (statusError) {
-      console.error('Unable to change marketplace product status:', statusError);
-      setError(
-        'Could not change this listing status. Confirm the admin product update rule is published.',
-      );
-    }
-  };
-
   const saveAdminProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const currentUser = auth.currentUser;
@@ -1317,24 +1234,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                             <td className="admin-actions">
                               <button
                                 type="button"
-                                onClick={() => setEditingProduct({ ...product })}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                className="danger"
-                                onClick={() =>
-                                  void setManagedProductStatus(
-                                    product,
-                                    product.status === 'removed' ? 'active' : 'removed',
-                                  )
-                                }
-                              >
-                                {product.status === 'removed' ? 'Restore' : 'Remove'}
-                              </button>
-                              <button
-                                type="button"
                                 className="danger"
                                 onClick={() => void deleteManagedProduct(product)}
                               >
@@ -1610,111 +1509,6 @@ const AdminPanel: React.FC<{ page: AdminPage }> = ({ page }) => {
                   type="button"
                   fill="outline"
                   onClick={() => setEditingUser(null)}
-                >
-                  Cancel
-                </IonButton>
-                <IonButton type="submit">Save changes</IonButton>
-              </div>
-            </form>
-          </div>
-        )}
-        {editingProduct && (
-          <div className="admin-modal-backdrop" role="presentation">
-            <form
-              className="admin-edit-modal admin-product-edit-modal"
-              onSubmit={(event) => void saveManagedProduct(event)}
-              aria-labelledby="edit-product-title"
-            >
-              <h2 id="edit-product-title">Edit product listing</h2>
-              <p className="admin-edit-email">
-                Seller: {editingProduct.sellerName} ({editingProduct.sellerEmail || editingProduct.sellerId})
-              </p>
-              <label>
-                Product name
-                <input
-                  required
-                  maxLength={100}
-                  value={editingProduct.name}
-                  onChange={(event) =>
-                    setEditingProduct({ ...editingProduct, name: event.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Description
-                <textarea
-                  maxLength={1000}
-                  value={editingProduct.description}
-                  onChange={(event) =>
-                    setEditingProduct({ ...editingProduct, description: event.target.value })
-                  }
-                />
-              </label>
-              <div className="admin-product-edit-row">
-                <label>
-                  Category
-                  <input
-                    required
-                    maxLength={60}
-                    value={editingProduct.category}
-                    onChange={(event) =>
-                      setEditingProduct({ ...editingProduct, category: event.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Price (₱)
-                  <input
-                    required
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={editingProduct.price}
-                    onChange={(event) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        price: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Stock
-                  <input
-                    required
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={editingProduct.stock}
-                    onChange={(event) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        stock: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-              </div>
-              <label>
-                Listing status
-                <select
-                  value={editingProduct.status}
-                  onChange={(event) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      status: event.target.value,
-                    })
-                  }
-                >
-                  <option value="active">Active</option>
-                  <option value="removed">Removed from marketplace</option>
-                </select>
-              </label>
-              <div className="admin-modal-actions">
-                <IonButton
-                  type="button"
-                  fill="outline"
-                  onClick={() => setEditingProduct(null)}
                 >
                   Cancel
                 </IonButton>

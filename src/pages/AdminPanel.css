@@ -601,18 +601,6 @@
   resize: vertical;
 }
 
-.admin-product-edit-modal {
-  width: min(100%, 600px);
-  max-height: min(90vh, 760px);
-  overflow-y: auto;
-}
-
-.admin-product-edit-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 0.7fr;
-  gap: 12px;
-}
-
 .admin-form-card ion-button,
 .admin-modal-actions ion-button {
   justify-self: start;
@@ -830,10 +818,6 @@
   }
 
   .admin-settings-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-product-edit-row {
     grid-template-columns: 1fr;
   }
 
